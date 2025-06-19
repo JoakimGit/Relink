@@ -1,12 +1,19 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var apiService = builder.AddProject<Projects.Relink_ApiService>("apiservice")
-    .WithHttpHealthCheck("/health");
+var postgres = builder.AddPostgres("postgres")
+    .WithDataVolume("postgres-data")
+    .WithPgAdmin(pgAdmin => pgAdmin.WithHostPort(5050));
 
-builder.AddProject<Projects.Relink_Web>("webfrontend")
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var apiService = builder.AddProject<Projects.Relink_ApiService>("apiservice")
+    .WithHttpHealthCheck("/health")
+    .WithReference(postgresdb).WaitFor(postgresdb);
+
+/* builder.AddProject<Projects.Relink_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
     .WithReference(apiService)
-    .WaitFor(apiService);
+    .WaitFor(apiService); */
 
 builder.Build().Run();
