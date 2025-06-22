@@ -1,10 +1,34 @@
+global using FluentValidation;
+global using Microsoft.AspNetCore.Http.HttpResults;
+global using Relink.ApiService.Common;
+global using Relink.ApiService.Data;
+global using Relink.ApiService.Data.Entities;
+global using Relink.ApiService.Common.Extensions;
+global using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using Relink.ApiService;
+
 var builder = WebApplication.CreateBuilder(args);
 {
     builder.AddServiceDefaults();
 
     builder.Services.AddProblemDetails();
 
-    builder.Services.AddOpenApi();
+    // Temporary fix until .NET 9.0.4 or 10
+    builder.Services.AddOpenApi(options =>
+    {
+        options.AddDocumentTransformer((document, context, cancellationToken) =>
+        {
+            document.Servers = [new OpenApiServer() { Url = "https://localhost:7445" }];
+            return Task.CompletedTask;
+        });
+    });
+
+    builder.Services.AddHostedService<Worker>();
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracing => tracing.AddSource(Worker.ActivitySourceName));
+
+    builder.AddNpgsqlDbContext<AppDbContext>(connectionName: "postgresdb");
 }
 
 
@@ -15,9 +39,18 @@ var app = builder.Build();
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/openapi/v1.json", "Relink API V1");
+        });
     }
 
     app.MapDefaultEndpoints();
+
+    app.MapEndpoints();
+
+    app.UseHttpsRedirection();
 }
 
 app.Run();
