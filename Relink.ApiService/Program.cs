@@ -5,6 +5,8 @@ global using Relink.ApiService.Data;
 global using Relink.ApiService.Data.Entities;
 global using Relink.ApiService.Common.Extensions;
 global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Caching.Hybrid;
+global using Npgsql;
 using Microsoft.OpenApi.Models;
 using Relink.ApiService;
 
@@ -19,16 +21,21 @@ var builder = WebApplication.CreateBuilder(args);
     {
         options.AddDocumentTransformer((document, context, cancellationToken) =>
         {
-            document.Servers = [new OpenApiServer() { Url = "https://localhost:7445" }];
+            document.Servers = [new OpenApiServer() { Url = "https://localhost:7445" }]; // matches URL from launchSettings.json
             return Task.CompletedTask;
         });
     });
 
     builder.Services.AddHostedService<Worker>();
-    builder.Services.AddOpenTelemetry()
-        .WithTracing(tracing => tracing.AddSource(Worker.ActivitySourceName));
+    builder.Services.AddOpenTelemetry().WithTracing(tracing => tracing.AddSource(Worker.ActivitySourceName));
+
+    builder.Services.AddHttpContextAccessor();
 
     builder.AddNpgsqlDbContext<AppDbContext>(connectionName: "postgresdb");
+
+    builder.AddRedisDistributedCache("redis");
+
+    builder.Services.AddHybridCache();
 }
 
 
