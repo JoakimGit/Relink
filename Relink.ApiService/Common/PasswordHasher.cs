@@ -5,9 +5,9 @@ namespace Relink.ApiService.Common;
 
 public static class PasswordHasher
 {
-    public static string? CalculatePasswordHash(string? password, string shortLinkId)
+    public static string? CalculatePasswordHash(string password, string shortLinkId)
     {
-        if (password == null) return null;
+        if (password.Trim() == string.Empty) return null;
 
         // prefer Shake256, fallback to SHA256 if not supported on Platform
         return Shake256.IsSupported

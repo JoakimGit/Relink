@@ -9,7 +9,7 @@ public static class Endpoints
         var endpoints = app.MapGroup("").WithOpenApi();
 
         endpoints.MapEndpoint<ShortenUrl>();
-        endpoints.MapEndpoint<GetLongUrl>();
+        endpoints.MapEndpoint<GetOriginalUrl>();
         endpoints.MapEndpoint<GetAllUrls>();
     }
 

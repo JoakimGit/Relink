@@ -12,7 +12,7 @@ public static class ShortLinkIdGenerator
 
     public static string CreateRandomId()
     {
-        var randomChars = Enumerable.Range(0, 8)
+        var randomChars = Enumerable.Range(0, 7)
           .Select(_ => UsableCharacters[RandomNumberGenerator.GetInt32(0, UsableCharacters.Length - 1)]);
 
         return string.Join("", randomChars);
