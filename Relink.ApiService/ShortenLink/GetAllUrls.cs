@@ -1,4 +1,3 @@
-
 namespace Relink.ApiService.ShortenLink;
 
 public class GetAllUrls : IEndpoint
