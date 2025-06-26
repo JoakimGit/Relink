@@ -2,12 +2,10 @@ namespace Relink.ApiService.ShortenLink;
 
 public class ShortenUrl : IEndpoint
 {
-    public static void Map(IEndpointRouteBuilder app)
-    {
-        app.MapPost("/shorten", Handle)
+    public static void Map(IEndpointRouteBuilder app) => app
+        .MapPost("/shorten", Handle)
         .WithSummary("Shortens a URL")
         .WithRequestValidation<Request>();
-    }
 
     public record Request(
         string LongUrl,
@@ -23,7 +21,7 @@ public class ShortenUrl : IEndpoint
 
     private const int MaxRetries = 3;
 
-    private static async Task<IResult> Handle(
+    private static async Task<Results<Ok<Response>, ProblemHttpResult>> Handle(
         Request request,
         AppDbContext database,
         HybridCache hybridCache,

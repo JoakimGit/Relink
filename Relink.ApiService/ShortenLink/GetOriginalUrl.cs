@@ -2,12 +2,10 @@ namespace Relink.ApiService.ShortenLink;
 
 public class GetOriginalUrl : IEndpoint
 {
-    public static void Map(IEndpointRouteBuilder app)
-    {
-        app.MapGet("/{shortcode}", Handle)
-            .WithSummary("Gets the longUrl of a link to redirect to")
-            .WithRequestValidation<Request>();
-    }
+    public static void Map(IEndpointRouteBuilder app) => app
+        .MapGet("/{shortcode}", Handle)
+        .WithSummary("Gets the longUrl of a link to redirect to")
+        .WithRequestValidation<Request>();
 
     public record Request(string Shortcode);
 
@@ -19,7 +17,7 @@ public class GetOriginalUrl : IEndpoint
         }
     }
 
-    private static async Task<IResult> Handle(
+    private static async Task<Results<NotFound, RedirectHttpResult>> Handle(
         string shortcode,
         AppDbContext database,
         HybridCache hybridCache,
