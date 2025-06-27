@@ -3,31 +3,12 @@ namespace Relink.ApiService.Tags;
 public class DeleteTag : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) => app
-        .MapDelete("/", Handle)
-        .WithSummary("Deletes a tag")
-        .WithRequestValidation<Request>();
+        .MapDelete("/{id}", Handle)
+        .WithSummary("Deletes a tag");
 
-    public record Request(int Id);
-
-    public class RequestValidator : AbstractValidator<Request>
+    private static async Task<Results<Ok, NotFound>> Handle(int id, AppDbContext db, CancellationToken ct)
     {
-        public RequestValidator()
-        {
-            RuleFor(x => x.Id).GreaterThan(0);
-        }
-    }
-
-    private static async Task<Results<Ok, NotFound>> Handle(
-        Request request,
-        AppDbContext database,
-        CancellationToken cancellationToken)
-    {
-        var rowsDeleted = await database.Tags
-            .Where(x => x.Id == request.Id)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        return rowsDeleted == 1
-            ? TypedResults.Ok()
-            : TypedResults.NotFound();
+        var rowsDeleted = await db.Tags.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
+        return rowsDeleted == 1 ? TypedResults.Ok() : TypedResults.NotFound();
     }
 }

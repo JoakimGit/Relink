@@ -3,11 +3,11 @@ namespace Relink.ApiService.Tags;
 public class UpdateTag : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) => app
-        .MapPost("/", Handle)
+        .MapPut("/{id}", Handle)
         .WithSummary("Updates a tag")
         .WithRequestValidation<Request>();
 
-    public record Request(int Id, string Name);
+    public record Request(string Name);
 
     public class RequestValidator : AbstractValidator<Request>
     {
@@ -17,16 +17,13 @@ public class UpdateTag : IEndpoint
         }
     }
 
-    private static async Task<Results<Ok<Tag>, NotFound>> Handle(
-        Request request,
-        AppDbContext database,
-        CancellationToken cancellationToken)
+    private static async Task<Results<Ok<Tag>, NotFound>> Handle(int id, Request request, AppDbContext db, CancellationToken ct)
     {
-        var tag = await database.Tags.SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+        var tag = await db.Tags.SingleOrDefaultAsync(x => x.Id == id, ct);
         if (tag == null) return TypedResults.NotFound();
 
         tag.Name = request.Name.Trim();
-        await database.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(ct);
 
         return TypedResults.Ok(tag);
     }

@@ -17,15 +17,12 @@ public class CreateTag : IEndpoint
         }
     }
 
-    private static async Task<Ok<Tag>> Handle(
-        Request request,
-        AppDbContext database,
-        CancellationToken cancellationToken)
+    private static async Task<Ok<Tag>> Handle(Request request, AppDbContext db, CancellationToken ct)
     {
         var tag = new Tag { Name = request.Name.Trim() };
 
-        await database.Tags.AddAsync(tag, cancellationToken);
-        await database.SaveChangesAsync(cancellationToken);
+        await db.Tags.AddAsync(tag, ct);
+        await db.SaveChangesAsync(ct);
 
         return TypedResults.Ok(tag);
     }

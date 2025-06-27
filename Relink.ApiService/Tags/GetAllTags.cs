@@ -6,11 +6,9 @@ public class GetAllTags : IEndpoint
         .MapPost("/", Handle)
         .WithSummary("Gets all tags");
 
-    private static async Task<Ok<List<Tag>>> Handle(
-        AppDbContext database,
-        CancellationToken cancellationToken)
+    private static async Task<Ok<List<Tag>>> Handle(AppDbContext db, CancellationToken ct)
     {
-        var tags = await database.Tags.ToListAsync(cancellationToken);
+        var tags = await db.Tags.ToListAsync(ct);
         return TypedResults.Ok(tags);
     }
 }
