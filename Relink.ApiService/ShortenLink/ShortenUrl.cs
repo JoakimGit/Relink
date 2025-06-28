@@ -15,18 +15,27 @@ public class ShortenUrl : IEndpoint
         DateTime? StartDate,
         DateTime? ExpirationDate,
         string? Password,
-        int? MaxUsages
+        int? MaxUsages,
+        int[]? TagIds
     );
     public record Response(string ShortCode);
+
+    public class RequestValidator : AbstractValidator<Request>
+    {
+        public RequestValidator()
+        {
+            RuleFor(x => x.LongUrl).NotEmpty();
+        }
+    }
 
     private const int MaxRetries = 3;
 
     private static async Task<Results<Ok<Response>, ProblemHttpResult>> Handle(
         Request request,
-        AppDbContext database,
+        AppDbContext db,
         HybridCache hybridCache,
         ILogger<ShortenUrl> logger,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
         for (int attempt = 0; attempt < MaxRetries; attempt++)
         {
@@ -46,11 +55,18 @@ public class ShortenUrl : IEndpoint
                     IsLocked = false
                 };
 
-                await database.ShortenedLinks.AddAsync(link, cancellationToken);
-                await database.SaveChangesAsync(cancellationToken);
+                var tags = request.TagIds != null ? await db.Tags.Where(t => request.TagIds.Contains(t.Id)).ToListAsync(ct) : [];
+
+                foreach (var tag in tags)
+                {
+                    link.Tags.Add(tag);
+                }
+
+                await db.ShortenedLinks.AddAsync(link, ct);
+                await db.SaveChangesAsync(ct);
                 var response = new Response(link.Id);
 
-                await hybridCache.SetAsync(shortcode, request.LongUrl, cancellationToken: CancellationToken.None);
+                await hybridCache.SetAsync(shortcode, link, cancellationToken: CancellationToken.None);
                 return TypedResults.Ok(response);
             }
             catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
@@ -62,7 +78,7 @@ public class ShortenUrl : IEndpoint
                 }
                 if (attempt == MaxRetries)
                 {
-                    logger.LogError(ex, "Failed to shorten URL after {MaxRetries} attempts due to unique constraint violation.", MaxRetries);
+                    logger.LogWarning(ex, "Failed to shorten URL after {MaxRetries} attempts due to unique constraint violation.", MaxRetries);
                     return TypedResults.Problem("Failed to shorten URL. Please try again with a different shortcode.");
                 }
             }
