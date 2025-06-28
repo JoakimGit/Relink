@@ -13,50 +13,50 @@ public class GetOriginalUrl : IEndpoint
     {
         public RequestValidator()
         {
-            RuleFor(x => x.Shortcode).NotEmpty().WithMessage("Shortcode is required.");
+            RuleFor(x => x.Shortcode).NotEmpty();
         }
     }
 
     private static async Task<Results<NotFound, RedirectHttpResult>> Handle(
         string shortcode,
-        AppDbContext database,
+        AppDbContext db,
         HybridCache hybridCache,
         HttpContextAccessor httpContext,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var originalUrl = await hybridCache.GetOrCreateAsync(shortcode, async token =>
-        {
-            var link = await database.ShortenedLinks.Where(x => x.Id == shortcode).SingleOrDefaultAsync(token);
-            return link?.LongUrl;
-        }, cancellationToken: cancellationToken);
+        var link = await hybridCache.GetOrCreateAsync(shortcode, async token =>
+            await db.ShortenedLinks.SingleOrDefaultAsync(x => x.Id == shortcode, token), cancellationToken: ct);
 
-        if (originalUrl is not null)
+        var redirectUrl = link?.LongUrl ?? link?.FallbackUrl;
+        if (link is not null && redirectUrl is not null)
         {
-            await RecordVisit(shortcode, database, httpContext, cancellationToken);
-            return TypedResults.Redirect(originalUrl);
+            await RecordVisit(link, db, httpContext, ct);
+            return TypedResults.Redirect(redirectUrl);
         }
 
         return TypedResults.NotFound();
     }
 
     private static async Task RecordVisit(
-        string shortcode,
-        AppDbContext database,
-        HttpContextAccessor httpContextAccessor,
-        CancellationToken cancellationToken)
+        ShortenedLink link,
+        AppDbContext db,
+        HttpContextAccessor contextAccessor,
+        CancellationToken ct)
     {
-        var context = httpContextAccessor.HttpContext;
+        var context = contextAccessor.HttpContext;
         var userAgent = context?.Request.Headers.UserAgent.ToString();
         var referrer = context?.Request.Headers.Referer.ToString();
 
         var visit = new LinkAnalytics
         {
-            ShortenedLinkId = shortcode,
-            IpAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString(),
+            ShortenedLinkId = link.Id,
+            IpAddress = contextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString(),
             UserAgent = userAgent,
             Referrer = referrer
         };
 
-        await database.LinkAnalytics.AddAsync(visit, cancellationToken);
+        link.CurrentUsages++;
+        await db.LinkAnalytics.AddAsync(visit, ct);
+        await db.SaveChangesAsync(ct);
     }
 }
