@@ -7,7 +7,7 @@ public static class Endpoints
 {
     public static void MapEndpoints(this WebApplication app)
     {
-        var endpoints = app.MapGroup("").WithOpenApi();
+        var endpoints = app.MapGroup("/api").WithOpenApi();
         endpoints.MapLinkEndpoints();
         endpoints.MapTagEndpoints();
     }

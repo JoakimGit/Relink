@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace Relink.ApiService.ShortenLink;
 
 public class GetOriginalUrl : IEndpoint
@@ -21,7 +23,7 @@ public class GetOriginalUrl : IEndpoint
         string shortcode,
         AppDbContext db,
         HybridCache hybridCache,
-        HttpContextAccessor httpContext,
+        [FromServices] HttpContextAccessor httpContext,
         CancellationToken ct)
     {
         var link = await hybridCache.GetOrCreateAsync(shortcode, async token =>

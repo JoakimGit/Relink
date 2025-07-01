@@ -36,6 +36,8 @@ var builder = WebApplication.CreateBuilder(args);
     builder.AddRedisDistributedCache("redis");
 
     builder.Services.AddHybridCache();
+
+    // builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 }
 
 

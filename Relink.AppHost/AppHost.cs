@@ -16,10 +16,8 @@ var apiService = builder.AddProject<Projects.Relink_ApiService>("apiservice")
     .WithReference(redis).WaitFor(redis)
     .WithSwaggerUI();
 
-/* builder.AddProject<Projects.Relink_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
-    .WithReference(apiService)
-    .WaitFor(apiService); */
+var client = builder.AddNpmApp("client", "../Relink.Client")
+    .WithReference(apiService).WaitFor(apiService)
+    .WithHttpEndpoint(env: "PORT");
 
 builder.Build().Run();
