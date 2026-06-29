@@ -1,11 +1,8 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
-import { Input } from "../../shared/components/input";
-import { Button } from "../../shared/components/button";
-import { Card } from "../../shared/components/card/card";
 
 @Component({
   selector: "app-header",
-  imports: [Input, Button, Card],
+  imports: [],
   template: `
     <header
       class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
@@ -30,13 +27,11 @@ import { Card } from "../../shared/components/card/card";
             </svg>
 
             <input
-              app-input
-              class="pl-10"
               placeholder="Search links, tags, or URLs..."
             />
           </div>
 
-          <button app-button class="gap-2">
+          <button>
             <svg
               class="size-4"
               xmlns="http://www.w3.org/2000/svg"
