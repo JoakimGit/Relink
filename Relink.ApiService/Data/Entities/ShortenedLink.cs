@@ -4,8 +4,9 @@ public class ShortenedLink
 {
     public required string Id { get; set; }
     public string LongUrl { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? FallbackUrl { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? ExpirationDate { get; set; }
