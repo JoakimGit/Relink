@@ -37,9 +37,10 @@ var builder = WebApplication.CreateBuilder(args);
 
     builder.Services.AddHybridCache();
 
-    // builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
-}
+    builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
+    builder.Services.AddCors();
+}
 
 var app = builder.Build();
 {
@@ -53,6 +54,8 @@ var app = builder.Build();
         {
             options.SwaggerEndpoint("/openapi/v1.json", "Relink API V1");
         });
+
+        app.UseCors(builder => builder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
     }
 
     app.MapDefaultEndpoints();
