@@ -2,5 +2,7 @@ allowBuilds:
   '@parcel/watcher': true
   '@tailwindcss/oxide': true
   esbuild: true
+  less: true
   lmdb: true
   msgpackr-extract: true
+  nx: true
