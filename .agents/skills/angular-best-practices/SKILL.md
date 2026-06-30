@@ -50,6 +50,7 @@ Produce code that is:
 - Prefer relative paths for template/style URLs.
 - Use the `host` property instead of `@HostBinding` and `@HostListener`.
 - Use `NgOptimizedImage` for static assets.
+- Prefer adding shared UI components through spartan-ui rather than creating new ones.
 
 ## Templates
 
