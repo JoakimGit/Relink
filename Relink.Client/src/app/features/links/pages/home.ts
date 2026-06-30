@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { LinkService } from "../services/link-service";
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideLock, lucideCalendar, lucideTag } from '@ng-icons/lucide';
@@ -51,7 +51,6 @@ import { lucideLock, lucideCalendar, lucideTag } from '@ng-icons/lucide';
         }       
     </div>
   `,
-    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage {
     linksResource = inject(LinkService).linksResource;

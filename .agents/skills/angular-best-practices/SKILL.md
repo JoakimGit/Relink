@@ -51,6 +51,7 @@ Produce code that is:
 - Use the `host` property instead of `@HostBinding` and `@HostListener`.
 - Use `NgOptimizedImage` for static assets.
 - Prefer adding shared UI components through spartan-ui rather than creating new ones.
+- Prefer ng-icons for icons rather than creating new SVG components.
 
 ## Templates
 

@@ -26,7 +26,7 @@ internal static class ResourceBuilderExtensions
                 }
                 catch (Exception e)
                 {
-                    return new ExecuteCommandResult { Success = false, ErrorMessage = e.Message };
+                    return new ExecuteCommandResult { Success = false, Message = e.Message };
                 }
             },
             new CommandOptions
