@@ -16,7 +16,7 @@ var apiService = builder.AddProject<Projects.Relink_ApiService>("apiservice")
     .WithReference(redis).WaitFor(redis)
     .WithSwaggerUI();
 
-var client = builder.AddNpmApp("client", "../Relink.Client")
+var client = builder.AddJavaScriptApp("client", "../Relink.Client")
     .WithReference(apiService).WaitFor(apiService)
     .WithHttpEndpoint(env: "PORT", port: 4200);
 

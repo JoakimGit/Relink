@@ -1,0 +1,5 @@
+{
+    "appHost": {
+        "path": "Relink.AppHost\\Relink.AppHost.csproj"
+    }
+}
