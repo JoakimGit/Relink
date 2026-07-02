@@ -9,5 +9,5 @@ public class LinkAnalytics
     public string? Referrer { get; set; }
     public string? UserAgent { get; set; }
 
-    public ShortenedLink ShortenedLink { get; set; } = null!;
+    public Link Link { get; set; } = null!;
 }

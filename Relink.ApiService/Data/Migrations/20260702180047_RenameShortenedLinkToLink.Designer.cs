@@ -12,18 +12,33 @@ using Relink.ApiService.Data;
 namespace Relink.ApiService.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260321214643_AddTitleToShortenedLink")]
-    partial class AddTitleToShortenedLink
+    [Migration("20260702180047_RenameShortenedLinkToLink")]
+    partial class RenameShortenedLinkToLink
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.6")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("LinkTag", b =>
+                {
+                    b.Property<string>("LinksId")
+                        .HasColumnType("text");
+
+                    b.Property<int>("TagsId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("LinksId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("LinkTag");
+                });
 
             modelBuilder.Entity("Relink.ApiService.Data.Entities.Group", b =>
                 {
@@ -44,6 +59,53 @@ namespace Relink.ApiService.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("Relink.ApiService.Data.Entities.Link", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpirationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FallbackUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LongUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<int?>("MaxVisits")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VisitCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.ToTable("Links");
                 });
 
             modelBuilder.Entity("Relink.ApiService.Data.Entities.LinkAnalytics", b =>
@@ -119,53 +181,6 @@ namespace Relink.ApiService.Data.Migrations
                     b.ToTable("LinkMetadata");
                 });
 
-            modelBuilder.Entity("Relink.ApiService.Data.Entities.Link", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("FallbackUrl")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("GroupId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsLocked")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("LongUrl")
-                        .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
-
-                    b.Property<int?>("MaxVisits")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("VisitCount")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
-
-                    b.ToTable("ShortenedLinks");
-                });
-
             modelBuilder.Entity("Relink.ApiService.Data.Entities.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -189,17 +204,27 @@ namespace Relink.ApiService.Data.Migrations
 
             modelBuilder.Entity("LinkTag", b =>
                 {
-                    b.Property<string>("LinksId")
-                        .HasColumnType("text");
+                    b.HasOne("Relink.ApiService.Data.Entities.Link", null)
+                        .WithMany()
+                        .HasForeignKey("LinksId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<int>("TagsId")
-                        .HasColumnType("integer");
+                    b.HasOne("Relink.ApiService.Data.Entities.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 
-                    b.HasKey("LinksId", "TagsId");
+            modelBuilder.Entity("Relink.ApiService.Data.Entities.Link", b =>
+                {
+                    b.HasOne("Relink.ApiService.Data.Entities.Group", "Group")
+                        .WithMany("Links")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasIndex("TagsId");
-
-                    b.ToTable("ShortenedLinkTag");
+                    b.Navigation("Group");
                 });
 
             modelBuilder.Entity("Relink.ApiService.Data.Entities.LinkAnalytics", b =>
@@ -222,31 +247,6 @@ namespace Relink.ApiService.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Link");
-                });
-
-            modelBuilder.Entity("Relink.ApiService.Data.Entities.Link", b =>
-                {
-                    b.HasOne("Relink.ApiService.Data.Entities.Group", "Group")
-                        .WithMany("Links")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Group");
-                });
-
-            modelBuilder.Entity("LinkTag", b =>
-                {
-                    b.HasOne("Relink.ApiService.Data.Entities.Link", null)
-                        .WithMany()
-                        .HasForeignKey("LinksId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Relink.ApiService.Data.Entities.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Relink.ApiService.Data.Entities.Group", b =>

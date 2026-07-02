@@ -1,4 +1,4 @@
-namespace Relink.ApiService.ShortenLink;
+namespace Relink.ApiService.ShortenLink.Endpoints;
 
 public class ShortenUrl : IEndpoint
 {
@@ -10,13 +10,13 @@ public class ShortenUrl : IEndpoint
     public record Request(
         string LongUrl,
         string? PreferedShortCode,
-        string? Description,
+        string? Notes,
         string? FallbackUrl,
         DateTime? StartDate,
         DateTime? ExpirationDate,
         string? Password,
-        int? MaxUsages,
-        int[]? TagIds
+        int? MaxVisits,
+        string[]? Tags
     );
     public record Response(string ShortCode);
 
@@ -42,27 +42,29 @@ public class ShortenUrl : IEndpoint
             try
             {
                 var shortcode = request.PreferedShortCode?.Trim() ?? ShortLinkIdGenerator.CreateRandomId();
-                var link = new ShortenedLink
+                var link = new Link
                 {
                     Id = shortcode,
                     LongUrl = request.LongUrl,
-                    Description = request.Description,
+                    Notes = request.Notes,
                     FallbackUrl = request.FallbackUrl,
                     StartDate = request.StartDate,
                     ExpirationDate = request.ExpirationDate,
                     PasswordHash = request.Password != null ? PasswordHasher.CalculatePasswordHash(request.Password, shortcode) : null,
-                    MaxUsages = request.MaxUsages,
+                    MaxVisits = request.MaxVisits,
                     IsLocked = false
                 };
 
-                var tags = request.TagIds != null ? await db.Tags.Where(t => request.TagIds.Contains(t.Id)).ToListAsync(ct) : [];
+                var tags = request.Tags != null && request.Tags.Length > 0
+                    ? await TagUpserter.UpsertAsync(db, request.Tags, ct)
+                    : [];
 
                 foreach (var tag in tags)
                 {
                     link.Tags.Add(tag);
                 }
 
-                await db.ShortenedLinks.AddAsync(link, ct);
+                await db.Links.AddAsync(link, ct);
                 await db.SaveChangesAsync(ct);
                 var response = new Response(link.Id);
 

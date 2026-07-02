@@ -1,18 +1,17 @@
 namespace Relink.ApiService.Data.Entities;
 
-public class ShortenedLink
+public class Link
 {
     public required string Id { get; set; }
     public string LongUrl { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string? Description { get; set; }
+    public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? FallbackUrl { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? ExpirationDate { get; set; }
     public string? PasswordHash { get; set; }
-    public int? MaxUsages { get; set; }
-    public int CurrentUsages { get; set; } = 0;
+    public int? MaxVisits { get; set; }
+    public int VisitCount { get; set; } = 0;
     public bool IsLocked { get; set; } = false;
 
     public LinkMetadata? Metadata { get; set; }

@@ -4,7 +4,7 @@ namespace Relink.ApiService.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<ShortenedLink> ShortenedLinks { get; set; }
+    public DbSet<Link> Links { get; set; }
     public DbSet<LinkMetadata> LinkMetadata { get; set; }
     public DbSet<LinkAnalytics> LinkAnalytics { get; set; }
     public DbSet<Tag> Tags { get; set; }
@@ -12,7 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        ConfigureShortenedLinkTable(modelBuilder);
+        ConfigureLinkTable(modelBuilder);
         ConfigureLinkMetadataTable(modelBuilder);
         ConfigureLinkAnalyticsTable(modelBuilder);
         ConfigureTagTable(modelBuilder);
@@ -21,30 +21,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         base.OnModelCreating(modelBuilder);
     }
 
-    private static void ConfigureShortenedLinkTable(ModelBuilder modelBuilder)
+    private static void ConfigureLinkTable(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ShortenedLink>(entity =>
+        modelBuilder.Entity<Link>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.LongUrl).IsRequired().HasMaxLength(2048);
 
             entity.HasOne(e => e.Metadata)
-                .WithOne(m => m.ShortenedLink)
+                .WithOne(m => m.Link)
                 .HasForeignKey<LinkMetadata>(m => m.ShortenedLinkId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasMany(e => e.Analytics)
-                .WithOne(a => a.ShortenedLink)
+                .WithOne(a => a.Link)
                 .HasForeignKey(a => a.ShortenedLinkId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Group)
-                .WithMany(g => g.ShortenedLinks)
+                .WithMany(g => g.Links)
                 .HasForeignKey(e => e.GroupId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasMany(e => e.Tags).WithMany(t => t.ShortenedLinks);
+            entity.HasMany(e => e.Tags).WithMany(t => t.Links);
         });
     }
 

@@ -1,5 +1,5 @@
-using Relink.ApiService.ShortenLink;
-using Relink.ApiService.Tags;
+using Relink.ApiService.ShortenLink.Endpoints;
+using Relink.ApiService.Tags.Endpoints;
 
 namespace Relink.ApiService;
 
@@ -20,7 +20,7 @@ public static class Endpoints
         endpoints.MapEndpoint<ShortenUrl>();
         endpoints.MapEndpoint<GetOriginalUrl>();
         endpoints.MapEndpoint<GetAllLinks>();
-        endpoints.MapEndpoint<AddTagToLink>();
+        endpoints.MapEndpoint<UpdateLink>();
     }
 
     private static void MapTagEndpoints(this IEndpointRouteBuilder app)

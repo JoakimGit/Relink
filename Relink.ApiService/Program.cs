@@ -1,9 +1,12 @@
 global using FluentValidation;
 global using Microsoft.AspNetCore.Http.HttpResults;
 global using Relink.ApiService.Common;
+global using Relink.ApiService.Common.Extensions;
 global using Relink.ApiService.Data;
 global using Relink.ApiService.Data.Entities;
-global using Relink.ApiService.Common.Extensions;
+global using Relink.ApiService.ShortenLink.Endpoints;
+global using Relink.ApiService.Tags;
+global using Relink.ApiService.Tags.Endpoints;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Caching.Hybrid;
 global using Npgsql;

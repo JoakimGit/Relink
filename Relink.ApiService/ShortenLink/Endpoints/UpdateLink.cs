@@ -1,4 +1,4 @@
-namespace Relink.ApiService.ShortenLink;
+namespace Relink.ApiService.ShortenLink.Endpoints;
 
 public class UpdateLink : IEndpoint
 {
@@ -7,15 +7,15 @@ public class UpdateLink : IEndpoint
         .WithSummary("Updates a shortened Link");
 
     public record Request(
-        string? Description,
+        string? Notes,
         string? FallbackUrl,
         DateTime? StartDate,
         DateTime? ExpirationDate,
         string? Password,
-        int? MaxUsages,
-        int[]? TagIds
+        int? MaxVisits,
+        string[]? Tags
     );
-    public record Response(ShortenedLink Link);
+    public record Response(Link Link);
 
     private static async Task<Results<Ok<Response>, NotFound>> Handle(
         string id,
@@ -24,30 +24,30 @@ public class UpdateLink : IEndpoint
         HybridCache hybridCache,
         CancellationToken ct)
     {
-        var link = await db.ShortenedLinks.Include(l => l.Tags).SingleOrDefaultAsync(x => x.Id == id, ct);
+        var link = await db.Links.Include(l => l.Tags).SingleOrDefaultAsync(x => x.Id == id, ct);
         if (link == null) return TypedResults.NotFound();
 
-        link.Description = request.Description;
+        link.Notes = request.Notes;
         link.FallbackUrl = request.FallbackUrl;
         link.StartDate = request.StartDate;
         link.ExpirationDate = request.ExpirationDate;
-        link.PasswordHash = request.Password != null ? PasswordHasher.CalculatePasswordHash(request.Password, link.Id) : null;
-        link.MaxUsages = request.MaxUsages;
 
-        var currentTagIds = link.Tags.Select(t => t.Id).ToList();
-        var newTagIds = request.TagIds ?? [];
-
-        var tagsToRemove = link.Tags.Where(t => !newTagIds.Contains(t.Id)).ToList();
-        foreach (var tag in tagsToRemove)
+        // Only update password when explicitly provided (non-null, non-empty)
+        if (!string.IsNullOrEmpty(request.Password))
         {
-            link.Tags.Remove(tag);
+            link.PasswordHash = PasswordHasher.CalculatePasswordHash(request.Password, link.Id);
         }
 
-        var tagsToAddIds = newTagIds.Except(currentTagIds).ToList();
-        var tagsToAdd = await db.Tags.Where(t => tagsToAddIds.Contains(t.Id)).ToListAsync(ct);
-        foreach (var tag in tagsToAdd)
+        link.MaxVisits = request.MaxVisits;
+
+        if (request.Tags != null && request.Tags.Length > 0)
         {
-            link.Tags.Add(tag);
+            var newTags = await TagUpserter.UpsertAsync(db, request.Tags, ct);
+            link.Tags.Clear();
+            foreach (var tag in newTags)
+            {
+                link.Tags.Add(tag);
+            }
         }
 
         await db.SaveChangesAsync(ct);

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Relink.ApiService.ShortenLink;
+namespace Relink.ApiService.ShortenLink.Endpoints;
 
 public class GetOriginalUrl : IEndpoint
 {
@@ -27,7 +27,7 @@ public class GetOriginalUrl : IEndpoint
         CancellationToken ct)
     {
         var link = await hybridCache.GetOrCreateAsync(shortcode, async token =>
-            await db.ShortenedLinks.SingleOrDefaultAsync(x => x.Id == shortcode, token), cancellationToken: ct);
+            await db.Links.SingleOrDefaultAsync(x => x.Id == shortcode, token), cancellationToken: ct);
 
         var redirectUrl = link?.LongUrl ?? link?.FallbackUrl;
         if (link is not null && redirectUrl is not null)
@@ -40,7 +40,7 @@ public class GetOriginalUrl : IEndpoint
     }
 
     private static async Task RecordVisit(
-        ShortenedLink link,
+        Link link,
         AppDbContext db,
         HttpContextAccessor contextAccessor,
         CancellationToken ct)
@@ -57,7 +57,7 @@ public class GetOriginalUrl : IEndpoint
             Referrer = referrer
         };
 
-        link.CurrentUsages++;
+        link.VisitCount++;
         await db.LinkAnalytics.AddAsync(visit, ct);
         await db.SaveChangesAsync(ct);
     }

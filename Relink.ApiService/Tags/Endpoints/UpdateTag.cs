@@ -1,4 +1,4 @@
-namespace Relink.ApiService.Tags;
+namespace Relink.ApiService.Tags.Endpoints;
 
 public class UpdateTag : IEndpoint
 {

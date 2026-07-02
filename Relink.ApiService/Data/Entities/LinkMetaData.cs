@@ -10,5 +10,5 @@ public class LinkMetadata
     public string? SiteName { get; set; }
     public DateTime? LastScrapedAt { get; set; }
 
-    public ShortenedLink ShortenedLink { get; set; } = null!;
+    public Link Link { get; set; } = null!;
 }

@@ -1,4 +1,4 @@
-namespace Relink.ApiService.ShortenLink;
+namespace Relink.ApiService.ShortenLink.Endpoints;
 
 public class GetAllLinks : IEndpoint
 {
@@ -6,9 +6,9 @@ public class GetAllLinks : IEndpoint
         .MapGet("/urls", Handle)
         .WithSummary("Gets all shortened URLs");
 
-    private static async Task<Ok<List<ShortenedLink>>> Handle(AppDbContext db, CancellationToken ct)
+    private static async Task<Ok<List<Link>>> Handle(AppDbContext db, CancellationToken ct)
     {
-        var links = await db.ShortenedLinks.ToListAsync(ct);
+        var links = await db.Links.ToListAsync(ct);
         return TypedResults.Ok(links);
     }
 }
