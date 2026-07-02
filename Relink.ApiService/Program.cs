@@ -10,7 +10,6 @@ global using Relink.ApiService.Tags.Endpoints;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Caching.Hybrid;
 global using Npgsql;
-using Microsoft.OpenApi.Models;
 using Relink.ApiService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +21,7 @@ var builder = WebApplication.CreateBuilder(args);
     builder.Services.AddOpenApi();
 
     builder.Services.AddHostedService<Worker>();
+
     builder.Services.AddOpenTelemetry().WithTracing(tracing => tracing.AddSource(Worker.ActivitySourceName));
 
     builder.Services.AddHttpContextAccessor();

@@ -16,14 +16,14 @@ Includes an Angular service that communicates with the API, and component tests 
 
 ## Acceptance criteria
 
-- [ ] Home page displays "ReLink" brand header, search input, and create button
-- [ ] Link cards render in a responsive grid, populated from `GET /urls`
-- [ ] Each card shows Short Code, Long URL, Visit Count, Tags, and constraint icons
-- [ ] Search input filters cards by Short Code, Long URL, and Tag names in real-time
-- [ ] Empty state is shown when no Links exist
-- [ ] API service is injectable and handles HTTP communication
-- [ ] Component tests render the page with mock data and assert card content
-- [ ] Component tests verify search filtering behavior
+- [x] Home page displays "ReLink" brand header, search input, and create button
+- [x] Link cards render in a responsive grid, populated from `GET /urls`
+- [x] Each card shows Short Code, Long URL, Visit Count, Tags, and constraint icons
+- [x] Search input filters cards by Short Code, Long URL, and Tag names in real-time
+- [x] Empty state is shown when no Links exist
+- [x] API service is injectable and handles HTTP communication
+- [x] Component tests render the page with mock data and assert card content
+- [x] Component tests verify search filtering behavior
 
 ## Blocked by
 

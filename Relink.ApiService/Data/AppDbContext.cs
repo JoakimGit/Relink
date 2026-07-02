@@ -44,7 +44,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasMany(e => e.Tags).WithMany(t => t.Links);
+            entity.HasMany(e => e.Tags).WithMany();
         });
     }
 

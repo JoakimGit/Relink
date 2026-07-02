@@ -3,7 +3,7 @@ namespace Relink.ApiService.ShortenLink.Endpoints;
 public class ShortenUrl : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) => app
-        .MapPost("/shorten", Handle)
+        .MapPost("", Handle)
         .WithSummary("Shortens a URL")
         .WithRequestValidation<Request>();
 

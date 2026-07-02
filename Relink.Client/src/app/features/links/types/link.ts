@@ -6,9 +6,10 @@ export type Link = {
     fallbackUrl: string | null;
     startDate: string | null;
     expirationDate: string | null;
-    maxVisits: string | null;
-    visitCount: string | null;
+    passwordHash: string | null;
+    maxVisits: number | null;
+    visitCount: number;
     isLocked: boolean;
 
-    tags?: Array<{ id: string; name: string }>;
+    tags?: Array<{ id: number; name: string }>;
 }

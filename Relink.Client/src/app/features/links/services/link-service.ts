@@ -4,5 +4,5 @@ import { Link } from '../types/link';
 
 @Service()
 export class LinkService {
-    readonly linksResource = httpResource<Array<Link>>(() => 'https://localhost:7445/api/links/urls');
+    readonly linksResource = httpResource<Array<Link>>(() => 'https://localhost:7445/api/links');
 }

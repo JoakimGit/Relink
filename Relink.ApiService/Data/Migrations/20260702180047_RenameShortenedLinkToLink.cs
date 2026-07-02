@@ -36,6 +36,10 @@ namespace Relink.ApiService.Data.Migrations
                 name: "PK_ShortenedLinkTag",
                 table: "ShortenedLinkTag");
 
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_ShortenedLinks",
+                table: "ShortenedLinks");
+
             // Drop the Title column before renaming the table
             migrationBuilder.DropColumn(
                 name: "Title",
