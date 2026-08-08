@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Relink.ApiService.ShortenLink.Endpoints;
@@ -23,7 +22,10 @@ public class GetOriginalUrl : IEndpoint
             return TypedResults.NotFound();
 
         // Constraint checks in priority order
-        var constraintResult = CheckConstraints(link);
+        var clientBaseUrl = (httpContext.HttpContext?.RequestServices
+            .GetRequiredService<IConfiguration>()
+            .GetValue<string>("ClientBaseUrl")) ?? string.Empty;
+        var constraintResult = CheckConstraints(link, clientBaseUrl);
         if (constraintResult is not null)
         {
             if (constraintResult is ProblemHttpResult problem)
@@ -43,7 +45,7 @@ public class GetOriginalUrl : IEndpoint
         return TypedResults.NotFound();
     }
 
-    private static object? CheckConstraints(Link link)
+    private static object? CheckConstraints(Link link, string clientBaseUrl)
     {
         // 1. Lock — manual disable
         if (link.IsLocked)
@@ -71,7 +73,7 @@ public class GetOriginalUrl : IEndpoint
 
         // 5. Password Lock — redirect to Angular unlock page
         if (!string.IsNullOrEmpty(link.PasswordHash))
-            return TypedResults.Redirect($"/unlock/{link.Id}");
+            return TypedResults.Redirect($"{clientBaseUrl}/unlock/{link.Id}");
 
         return null;
     }

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Caching.Hybrid;
-
 namespace Relink.ApiService.ShortenLink.Endpoints;
 
 public class DeleteLink : IEndpoint

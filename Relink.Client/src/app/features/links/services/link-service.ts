@@ -1,7 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Link, CreateLinkRequest, CreateLinkResponse, UpdateLinkRequest, Tag } from '../types/link';
+import { Link, CreateLinkRequest, CreateLinkResponse, UpdateLinkRequest, UnlockResponse, Tag } from '../types/link';
 
 @Service()
 export class LinkService {
@@ -23,5 +23,9 @@ export class LinkService {
 
     deleteLink(id: string) {
         return this.http.delete<void>(`${this.apiUrl}/links/${id}`);
+    }
+
+    unlockLink(shortcode: string, password: string) {
+        return this.http.post<UnlockResponse>(`${this.apiUrl}/links/${shortcode}/unlock`, { password });
     }
 }

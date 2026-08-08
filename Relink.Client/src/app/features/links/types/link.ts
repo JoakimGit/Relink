@@ -46,3 +46,8 @@ export type UpdateLinkRequest = {
     maxVisits?: number | null;
     tags?: string[];
 };
+
+export type UnlockResponse = {
+    longUrl: string;
+    fallbackUrl: string | null;
+};

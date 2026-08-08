@@ -14,13 +14,13 @@ Includes component tests that verify password submission, success redirect, and 
 
 ## Acceptance criteria
 
-- [ ] `/unlock/:shortcode` route renders the unlock page
-- [ ] Page shows a message indicating the Link is password-protected
-- [ ] Password form with input and submit button is displayed
-- [ ] On correct password, visitor is redirected to the Long URL
-- [ ] On incorrect password, an error message is shown
-- [ ] Page has no app navigation/chrome — focused prompt only
-- [ ] Component tests verify success redirect and error display
+- [x] `/unlock/:shortcode` route renders the unlock page
+- [x] Page shows a message indicating the Link is password-protected
+- [x] Password form with input and submit button is displayed
+- [x] On correct password, visitor is redirected to the Long URL
+- [x] On incorrect password, an error message is shown
+- [x] Page has no app navigation/chrome — focused prompt only
+- [x] Component tests verify success redirect and error display
 
 ## Blocked by
 

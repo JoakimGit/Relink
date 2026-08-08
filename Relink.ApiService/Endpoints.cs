@@ -1,6 +1,3 @@
-using Relink.ApiService.ShortenLink.Endpoints;
-using Relink.ApiService.Tags.Endpoints;
-
 namespace Relink.ApiService;
 
 public static class Endpoints
@@ -8,6 +5,10 @@ public static class Endpoints
     public static void MapEndpoints(this WebApplication app)
     {
         var endpoints = app.MapGroup("/api").WithOpenApi();
+
+        // Redirect endpoint at root: /{shortcode}
+        app.MapEndpoint<GetOriginalUrl>();
+
         endpoints.MapLinkEndpoints();
         endpoints.MapTagEndpoints();
     }
@@ -17,14 +18,11 @@ public static class Endpoints
         var endpoints = app.MapGroup("/links")
             .WithTags("Links");
 
-        // Redirect endpoint at root: /{shortcode}
-        // endpoints.MapEndpoint<GetOriginalUrl>();
-        app.MapEndpoint<GetOriginalUrl>();
-
         endpoints.MapEndpoint<ShortenUrl>();
         endpoints.MapEndpoint<GetAllLinks>();
         endpoints.MapEndpoint<UpdateLink>();
         endpoints.MapEndpoint<DeleteLink>();
+        endpoints.MapEndpoint<UnlockLink>();
     }
 
     private static void MapTagEndpoints(this IEndpointRouteBuilder app)
