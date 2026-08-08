@@ -1,3 +1,8 @@
+export type Tag = {
+    id: number;
+    name: string;
+};
+
 export type Link = {
     id: string;
     longUrl: string;
@@ -11,5 +16,21 @@ export type Link = {
     visitCount: number;
     isLocked: boolean;
 
-    tags?: Array<{ id: number; name: string }>;
-}
+    tags?: Array<Tag>;
+};
+
+export type CreateLinkRequest = {
+    longUrl: string;
+    preferedShortCode?: string;
+    notes?: string;
+    fallbackUrl?: string;
+    startDate?: string;
+    expirationDate?: string;
+    password?: string;
+    maxVisits?: number;
+    tags?: string[];
+};
+
+export type CreateLinkResponse = {
+    shortCode: string;
+};

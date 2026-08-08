@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -14,15 +14,15 @@ Includes component tests that verify form submission, tag autocomplete behavior,
 
 ## Acceptance criteria
 
-- [ ] Create modal opens when clicking the "+" button on the home page
-- [ ] Form includes all fields: Long URL (required), Preferred Short Code, Notes, Fallback URL, Start Date, Expiration Date, Password, Max Visits, Tags
-- [ ] Tags field supports free-text input with autocomplete dropdown of existing Tags
-- [ ] Selected Tags render as removable chips inside the Tags field
-- [ ] Form validates that Long URL is not empty
-- [ ] On submit, calls `POST /shorten` with correct payload (tag names, not IDs)
-- [ ] On success, modal closes and the Link grid refreshes
-- [ ] On error, inline validation messages are shown
-- [ ] Component tests verify form submission payload and tag autocomplete behavior
+- [x] Create modal opens when clicking the "+" button on the home page
+- [x] Form includes all fields: Long URL (required), Preferred Short Code, Notes, Fallback URL, Start Date, Expiration Date, Password, Max Visits, Tags
+- [x] Tags field supports free-text input with autocomplete dropdown of existing Tags
+- [x] Selected Tags render as removable chips inside the Tags field
+- [x] Form validates that Long URL is not empty
+- [x] On submit, calls `POST /shorten` with correct payload (tag names, not IDs)
+- [x] On success, modal closes and the Link grid refreshes
+- [x] On error, inline validation messages are shown
+- [x] Component tests verify form submission payload and tag autocomplete behavior
 
 ## Blocked by
 

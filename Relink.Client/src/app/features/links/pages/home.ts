@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { LinkService } from "../services/link-service";
+import { CreateLinkModal } from "../components/create-link-modal";
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
     lucideLock,
@@ -15,7 +16,7 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: "app-home-page",
-    imports: [NgIcon, FormsModule, DatePipe],
+    imports: [NgIcon, FormsModule, DatePipe, CreateLinkModal],
     viewProviders: [provideIcons({
         lucideLock,
         lucideCalendar,
@@ -34,12 +35,7 @@ import { FormsModule } from '@angular/forms';
                     <ng-icon name="lucideLink" class="text-primary text-xl" />
                     <h1 class="text-xl font-semibold tracking-tight">ReLink</h1>
                 </div>
-                <button
-                    class="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                    <ng-icon name="lucidePlus" class="text-sm" />
-                    Create Link
-                </button>
+                <app-create-link-modal (linkCreated)="linksResource.reload()" />
             </div>
         </header>
 

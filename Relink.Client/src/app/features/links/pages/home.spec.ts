@@ -46,7 +46,17 @@ function createMockLinkService(links: Link[]) {
             value: () => data(),
             isLoading: () => false,
             error: () => null as Error | null,
+            reload: () => { },
         },
+        tagsResource: {
+            hasValue: () => true,
+            value: () => [],
+            isLoading: () => false,
+            error: () => null as Error | null,
+        },
+        createLink: () => ({
+            toPromise: () => Promise.resolve({ shortCode: 'test123' }),
+        }),
     };
 }
 
