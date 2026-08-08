@@ -20,14 +20,14 @@ Includes integration tests for each constraint scenario: locked, not-yet-started
 
 ## Acceptance criteria
 
-- [ ] Locked Link returns a specific error (not a generic "not found")
-- [ ] Pre-Start Date Link returns error with the availability date
-- [ ] Expired Link returns error with the expiration date
-- [ ] Max Visits reached Link returns error with the limit info
-- [ ] Password Locked Link redirects to `/unlock/{shortcode}` (Angular app route)
-- [ ] Unconstrained Link records a Visit and redirects to the Long URL
+- [x] Locked Link returns a specific error (not a generic "not found")
+- [x] Pre-Start Date Link returns error with the availability date
+- [x] Expired Link returns error with the expiration date
+- [x] Max Visits reached Link returns error with the limit info
+- [x] Password Locked Link redirects to `/unlock/{shortcode}` (Angular app route)
+- [x] Unconstrained Link records a Visit and redirects to the Long URL
 - [ ] Unreachable Long URL falls back to Fallback URL if set
-- [ ] Integration tests cover all constraint scenarios
+- [x] Integration tests cover all constraint scenarios
 
 ## Blocked by
 

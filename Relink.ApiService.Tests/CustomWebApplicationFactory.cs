@@ -1,0 +1,55 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Relink.ApiService.Data;
+
+namespace Relink.ApiService.Tests;
+
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureServices(services =>
+        {
+            // Replace Aspire's Npgsql DbContext with InMemory
+            // Remove all Aspire DB registrations
+            var toRemove = services
+                .Where(d => d.ServiceType == typeof(AppDbContext)
+                         || d.ServiceType == typeof(DbContextOptions)
+                         || d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+                         || d.ServiceType.Name.Contains("Npgsql")
+                         || d.ServiceType.Name.Contains("PostgreSql")
+                         || d.ServiceType.FullName?.Contains("EntityFramework") == true)
+                .ToList();
+
+            foreach (var d in toRemove)
+                services.Remove(d);
+
+            // Use a fixed database name for sharing between scopes
+            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("TestDb"));
+
+            // Remove Worker that tries to run EF migrations
+            var worker = services.FirstOrDefault(d => d.ImplementationType == typeof(Worker));
+            if (worker != null)
+                services.Remove(worker);
+
+            // Disable HTTPS redirection for testing
+            services.Configure<Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionOptions>(options =>
+            {
+                options.HttpsPort = null;
+            });
+        });
+
+        builder.ConfigureAppConfiguration((ctx, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["HostOptions:BackgroundServiceExceptionBehavior"] = "Ignore"
+            });
+        });
+
+        builder.UseSetting("https_port", null);
+    }
+}
