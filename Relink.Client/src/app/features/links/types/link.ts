@@ -34,3 +34,15 @@ export type CreateLinkRequest = {
 export type CreateLinkResponse = {
     shortCode: string;
 };
+
+export type UpdateLinkRequest = {
+    longUrl: string;
+    preferedShortCode?: string;
+    notes?: string;
+    fallbackUrl?: string;
+    startDate?: string | null;
+    expirationDate?: string | null;
+    password?: string | null;
+    maxVisits?: number | null;
+    tags?: string[];
+};

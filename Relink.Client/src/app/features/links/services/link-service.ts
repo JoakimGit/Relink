@@ -1,18 +1,27 @@
 import { httpResource } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Link, CreateLinkRequest, CreateLinkResponse, Tag } from '../types/link';
+import { Link, CreateLinkRequest, CreateLinkResponse, UpdateLinkRequest, Tag } from '../types/link';
 
 @Service()
 export class LinkService {
     private readonly http = inject(HttpClient);
-    private readonly baseUrl = 'https://localhost:7445/api';
+    private readonly apiUrl = 'https://localhost:7445/api';
+    readonly redirectBaseUrl = 'https://localhost:7445';
 
-    readonly linksResource = httpResource<Array<Link>>(() => `${this.baseUrl}/links`);
+    readonly linksResource = httpResource<Array<Link>>(() => `${this.apiUrl}/links`);
 
-    readonly tagsResource = httpResource<Array<Tag>>(() => `${this.baseUrl}/tags`);
+    readonly tagsResource = httpResource<Array<Tag>>(() => `${this.apiUrl}/tags`);
 
     createLink(request: CreateLinkRequest) {
-        return this.http.post<CreateLinkResponse>(`${this.baseUrl}/links`, request);
+        return this.http.post<CreateLinkResponse>(`${this.apiUrl}/links`, request);
+    }
+
+    updateLink(id: string, request: UpdateLinkRequest) {
+        return this.http.patch<void>(`${this.apiUrl}/links/${id}`, request);
+    }
+
+    deleteLink(id: string) {
+        return this.http.delete<void>(`${this.apiUrl}/links/${id}`);
     }
 }

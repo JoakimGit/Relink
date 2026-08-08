@@ -1,4 +1,4 @@
-import { Component, computed, inject, output, signal } from "@angular/core";
+import { Component, computed, inject, input, output, signal, effect } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { Button } from "../../../shared/components/ui/button/button";
 import { Dialog } from "../../../shared/components/ui/dialog/dialog";
@@ -19,13 +19,12 @@ import {
     lucidePlus,
     lucideX,
     lucideLoader,
-    lucideChevronDown,
 } from "@ng-icons/lucide";
 import { LinkService } from "../services/link-service";
-import type { CreateLinkRequest, Tag } from "../types/link";
+import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
 
 @Component({
-    selector: "app-create-link-modal",
+    selector: "app-link-form-modal",
     imports: [
         FormsModule,
         Button,
@@ -49,56 +48,62 @@ import type { CreateLinkRequest, Tag } from "../types/link";
             lucidePlus,
             lucideX,
             lucideLoader,
-            lucideChevronDown,
         }),
     ],
     template: `
         <app-dialog [state]="dialogState()" (closed)="resetForm()">
-            <button
-                appDialogTrigger
-                appBtn
-                class="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
-                (click)="openDialog()"
-            >
-                <ng-icon name="lucidePlus" class="text-sm" />
-                Create Link
-            </button>
+            @if (!isEditMode()) {
+                <!-- Create trigger button -->
+                <button
+                    appDialogTrigger
+                    appBtn
+                    class="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+                    (click)="openDialog()"
+                >
+                    <ng-icon name="lucidePlus" class="text-sm" />
+                    Create Link
+                </button>
+            }
 
             <app-dialog-content *appDialogPortal="let ctx" class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <app-dialog-header>
-                    <h3 appDialogTitle>Create Link</h3>
+                    <h3 appDialogTitle>{{ isEditMode() ? 'Edit Link' : 'Create Link' }}</h3>
                     <p appDialogDescription>
-                        Fill in the details for your new shortened link. Only the Long URL is required.
+                        @if (isEditMode()) {
+                            Update the details for <span class="font-mono text-foreground">{{ editLinkId() }}</span>.
+                        } @else {
+                            Fill in the details for your new shortened link. Only the Long URL is required.
+                        }
                     </p>
                 </app-dialog-header>
 
                 <form class="flex flex-col gap-4" (submit)="onSubmit($event)">
                     <!-- Long URL -->
                     <div class="flex flex-col gap-1.5">
-                        <label appLabel for="longUrl">
+                        <label appLabel for="linkForm-longUrl">
                             Long URL <span class="text-destructive">*</span>
                         </label>
                         <input
                             appInput
-                            id="longUrl"
+                            id="linkForm-longUrl"
                             name="longUrl"
                             type="url"
                             placeholder="https://example.com/very/long/url"
                             [ngModel]="longUrl()"
-                            (ngModelChange)="longUrl.set($event)"
+                            (ngModelChange)="longUrl.set($event); longUrlTouched.set(true)"
                             required
                         />
-                        @if (longUrlError()) {
+                        @if (longUrlTouched() && longUrlError()) {
                             <p class="text-xs text-destructive">{{ longUrlError() }}</p>
                         }
                     </div>
 
                     <!-- Preferred Short Code -->
                     <div class="flex flex-col gap-1.5">
-                        <label appLabel for="preferredShortCode">Preferred Short Code</label>
+                        <label appLabel for="linkForm-preferredShortCode">Preferred Short Code</label>
                         <input
                             appInput
-                            id="preferredShortCode"
+                            id="linkForm-preferredShortCode"
                             name="preferredShortCode"
                             type="text"
                             placeholder="my-custom-code"
@@ -109,10 +114,10 @@ import type { CreateLinkRequest, Tag } from "../types/link";
 
                     <!-- Notes -->
                     <div class="flex flex-col gap-1.5">
-                        <label appLabel for="notes">Notes</label>
+                        <label appLabel for="linkForm-notes">Notes</label>
                         <textarea
                             appTextarea
-                            id="notes"
+                            id="linkForm-notes"
                             name="notes"
                             placeholder="Optional notes about this link..."
                             [ngModel]="notes()"
@@ -122,10 +127,10 @@ import type { CreateLinkRequest, Tag } from "../types/link";
 
                     <!-- Fallback URL -->
                     <div class="flex flex-col gap-1.5">
-                        <label appLabel for="fallbackUrl">Fallback URL</label>
+                        <label appLabel for="linkForm-fallbackUrl">Fallback URL</label>
                         <input
                             appInput
-                            id="fallbackUrl"
+                            id="linkForm-fallbackUrl"
                             name="fallbackUrl"
                             type="url"
                             placeholder="https://backup.example.com"
@@ -137,10 +142,10 @@ import type { CreateLinkRequest, Tag } from "../types/link";
                     <!-- Start Date & Expiration Date -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
-                            <label appLabel for="startDate">Start Date</label>
+                            <label appLabel for="linkForm-startDate">Start Date</label>
                             <input
                                 appInput
-                                id="startDate"
+                                id="linkForm-startDate"
                                 name="startDate"
                                 type="date"
                                 [ngModel]="startDate()"
@@ -148,10 +153,10 @@ import type { CreateLinkRequest, Tag } from "../types/link";
                             />
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label appLabel for="expirationDate">Expiration Date</label>
+                            <label appLabel for="linkForm-expirationDate">Expiration Date</label>
                             <input
                                 appInput
-                                id="expirationDate"
+                                id="linkForm-expirationDate"
                                 name="expirationDate"
                                 type="date"
                                 [ngModel]="expirationDate()"
@@ -163,22 +168,25 @@ import type { CreateLinkRequest, Tag } from "../types/link";
                     <!-- Password & Max Visits -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
-                            <label appLabel for="password">Password</label>
+                            <label appLabel for="linkForm-password">Password</label>
                             <input
                                 appInput
-                                id="password"
+                                id="linkForm-password"
                                 name="password"
                                 type="password"
-                                placeholder="Optional"
+                                [placeholder]="isEditMode() ? 'Leave empty to keep current' : 'Optional'"
                                 [ngModel]="password()"
                                 (ngModelChange)="password.set($event)"
                             />
+                            @if (isEditMode()) {
+                                <p class="text-xs text-muted-foreground">Leave empty to keep current Password Lock.</p>
+                            }
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <label appLabel for="maxVisits">Max Visits</label>
+                            <label appLabel for="linkForm-maxVisits">Max Visits</label>
                             <input
                                 appInput
-                                id="maxVisits"
+                                id="linkForm-maxVisits"
                                 name="maxVisits"
                                 type="number"
                                 min="1"
@@ -191,11 +199,11 @@ import type { CreateLinkRequest, Tag } from "../types/link";
 
                     <!-- Tags -->
                     <div class="flex flex-col gap-1.5">
-                        <label appLabel for="tagInput">Tags</label>
+                        <label appLabel for="linkForm-tagInput">Tags</label>
                         <div class="relative">
                             <input
                                 appInput
-                                id="tagInput"
+                                id="linkForm-tagInput"
                                 name="tagInput"
                                 type="text"
                                 placeholder="Type a tag name and press Enter..."
@@ -205,7 +213,6 @@ import type { CreateLinkRequest, Tag } from "../types/link";
                                 (focus)="onTagFocus()"
                                 (blur)="onTagBlur()"
                             />
-                            <!-- Autocomplete dropdown -->
                             @if (showTagSuggestions() && filteredTagSuggestions().length > 0) {
                                 <div
                                     data-testid="tag-suggestions"
@@ -224,7 +231,6 @@ import type { CreateLinkRequest, Tag } from "../types/link";
                                 </div>
                             }
                         </div>
-                        <!-- Selected tag chips -->
                         @if (selectedTags().length > 0) {
                             <div class="flex flex-wrap gap-1.5 mt-1">
                                 @for (tag of selectedTags(); track tag) {
@@ -240,7 +246,7 @@ import type { CreateLinkRequest, Tag } from "../types/link";
                                             data-testid="remove-tag"
                                             class="inline-flex items-center hover:text-destructive"
                                             (click)="removeTag(tag)"
-                                            aria-label="Remove tag {{ tag }}"
+                                            [attr.aria-label]="'Remove tag ' + tag"
                                         >
                                             <ng-icon name="lucideX" class="text-xs" />
                                         </button>
@@ -270,7 +276,7 @@ import type { CreateLinkRequest, Tag } from "../types/link";
                             @if (isSubmitting()) {
                                 <ng-icon name="lucideLoader" class="animate-spin mr-1" />
                             }
-                            Create Link
+                            {{ isEditMode() ? 'Save Changes' : 'Create Link' }}
                         </button>
                     </app-dialog-footer>
                 </form>
@@ -278,11 +284,22 @@ import type { CreateLinkRequest, Tag } from "../types/link";
         </app-dialog>
     `,
 })
-export class CreateLinkModal {
+export class LinkFormModal {
     private readonly linkService = inject(LinkService);
 
-    /** Emits when a link is successfully created, so the parent can refresh. */
-    readonly linkCreated = output<void>();
+    // ─── Mode ───────────────────────────────────────────────────
+    /** When set, the modal operates in edit mode. When null, it's create mode. */
+    readonly link = input<Link | null>(null);
+
+    readonly isEditMode = computed(() => this.link() !== null);
+    readonly editLinkId = computed(() => this.link()?.id ?? '');
+
+    // ─── Outputs ────────────────────────────────────────────────
+    /** Emits when a link is successfully created or updated. */
+    readonly linkSaved = output<void>();
+
+    /** Emits when the dialog is closed (cancel, click-outside, or after save). */
+    readonly closed = output<void>();
 
     // ─── Dialog state ───────────────────────────────────────────
     readonly dialogState = signal<"open" | "closed">("closed");
@@ -305,6 +322,7 @@ export class CreateLinkModal {
     // ─── Submission state ───────────────────────────────────────
     readonly isSubmitting = signal(false);
     readonly submitError = signal<string | null>(null);
+    readonly longUrlTouched = signal(false);
 
     // ─── Validation ─────────────────────────────────────────────
     readonly longUrlError = computed(() => {
@@ -346,6 +364,32 @@ export class CreateLinkModal {
         );
     });
 
+    constructor() {
+        // Watch for link input changes to pre-fill the form in edit mode
+        effect(() => {
+            const linkData = this.link();
+            if (linkData) {
+                this.preFillForm(linkData);
+                this.dialogState.set("open");
+            }
+        });
+    }
+
+    private preFillForm(linkData: Link): void {
+        this.longUrl.set(linkData.longUrl);
+        this.preferredShortCode.set(linkData.id);
+        this.notes.set(linkData.notes ?? "");
+        this.fallbackUrl.set(linkData.fallbackUrl ?? "");
+        this.startDate.set(linkData.startDate ? linkData.startDate.split("T")[0] : "");
+        this.expirationDate.set(linkData.expirationDate ? linkData.expirationDate.split("T")[0] : "");
+        this.password.set("");
+        this.maxVisits.set(linkData.maxVisits?.toString() ?? "");
+        this.selectedTags.set(linkData.tags?.map((t) => t.name) ?? []);
+        this.submitError.set(null);
+        this.isSubmitting.set(false);
+        this.longUrlTouched.set(false);
+    }
+
     // ─── Dialog actions ─────────────────────────────────────────
     openDialog() {
         this.dialogState.set("open");
@@ -364,7 +408,9 @@ export class CreateLinkModal {
         this.selectedTags.set([]);
         this.submitError.set(null);
         this.isSubmitting.set(false);
+        this.longUrlTouched.set(false);
         this.dialogState.set("closed");
+        this.closed.emit();
     }
 
     // ─── Tag actions ────────────────────────────────────────────
@@ -397,7 +443,6 @@ export class CreateLinkModal {
             this.tagInput() === "" &&
             this.selectedTags().length > 0
         ) {
-            // Remove last tag on backspace when input is empty
             const tags = this.selectedTags();
             this.selectedTags.set(tags.slice(0, -1));
         }
@@ -408,7 +453,6 @@ export class CreateLinkModal {
     }
 
     onTagBlur() {
-        // Delay to allow mousedown on suggestion to fire first
         setTimeout(() => this.tagInputFocused.set(false), 150);
     }
 
@@ -418,55 +462,104 @@ export class CreateLinkModal {
 
         if (!this.isFormValid()) return;
 
+        if (this.isEditMode()) {
+            await this.submitEdit();
+        } else {
+            await this.submitCreate();
+        }
+    }
+
+    /** Builds the common fields from the form into a partial request. */
+    private applyFormFields<T extends Record<string, unknown>>(
+        request: T,
+        nullOutEmpty: boolean,
+    ): T {
+        const s = (v: string) => v.trim();
+        const date = (v: string) => (v ? new Date(v).toISOString() : null);
+        const num = (v: unknown) => {
+            const n = parseInt(String(v).trim(), 10);
+            return !isNaN(n) && n > 0 ? n : null;
+        };
+
+        const preferredCode = s(this.preferredShortCode());
+        if (preferredCode) (request as Record<string, unknown>)['preferedShortCode'] = preferredCode;
+
+        const notesVal = s(this.notes());
+        if (notesVal) (request as Record<string, unknown>)['notes'] = notesVal;
+        else if (nullOutEmpty) (request as Record<string, unknown>)['notes'] = null;
+
+        const fallback = s(this.fallbackUrl());
+        if (fallback) (request as Record<string, unknown>)['fallbackUrl'] = fallback;
+        else if (nullOutEmpty) (request as Record<string, unknown>)['fallbackUrl'] = null;
+
+        const start = date(this.startDate());
+        if (start) (request as Record<string, unknown>)['startDate'] = start;
+        else if (nullOutEmpty) (request as Record<string, unknown>)['startDate'] = null;
+
+        const expiration = date(this.expirationDate());
+        if (expiration) (request as Record<string, unknown>)['expirationDate'] = expiration;
+        else if (nullOutEmpty) (request as Record<string, unknown>)['expirationDate'] = null;
+
+        const pw = s(this.password());
+        if (pw) (request as Record<string, unknown>)['password'] = pw;
+
+        const max = num(this.maxVisits());
+        if (max) (request as Record<string, unknown>)['maxVisits'] = max;
+        else if (nullOutEmpty) (request as Record<string, unknown>)['maxVisits'] = null;
+
+        const tags = this.selectedTags();
+        if (tags.length > 0) (request as Record<string, unknown>)['tags'] = tags;
+
+        return request;
+    }
+
+    private async submitCreate() {
         this.isSubmitting.set(true);
         this.submitError.set(null);
 
-        const request: CreateLinkRequest = {
-            longUrl: this.longUrl().trim(),
-        };
-
-        const preferredCode = this.preferredShortCode().trim();
-        if (preferredCode) request.preferedShortCode = preferredCode;
-
-        const notesValue = this.notes().trim();
-        if (notesValue) request.notes = notesValue;
-
-        const fallback = this.fallbackUrl().trim();
-        if (fallback) request.fallbackUrl = fallback;
-
-        const start = this.startDate();
-        if (start) request.startDate = new Date(start).toISOString();
-
-        const expiration = this.expirationDate();
-        if (expiration) request.expirationDate = new Date(expiration).toISOString();
-
-        const pw = this.password();
-        if (pw) request.password = pw;
-
-        const maxVisitsRaw = this.maxVisits().trim();
-        if (maxVisitsRaw) {
-            const parsed = parseInt(maxVisitsRaw, 10);
-            if (!isNaN(parsed) && parsed > 0) {
-                request.maxVisits = parsed;
-            }
-        }
-
-        const tags = this.selectedTags();
-        if (tags.length > 0) request.tags = tags;
+        const request = this.applyFormFields<CreateLinkRequest>(
+            { longUrl: this.longUrl().trim() },
+            false,
+        );
 
         try {
             await this.linkService.createLink(request).toPromise();
         } catch (err: unknown) {
-            const message =
-                err instanceof Error
-                    ? err.message
-                    : "Failed to create link. Please try again.";
-            this.submitError.set(message);
+            this.submitError.set(
+                err instanceof Error ? err.message : 'Failed to create link. Please try again.',
+            );
             this.isSubmitting.set(false);
             return;
         }
 
-        this.linkCreated.emit();
+        this.linkSaved.emit();
+        this.resetForm();
+        this.linkService.linksResource.reload();
+    }
+
+    private async submitEdit() {
+        const linkData = this.link();
+        if (!linkData) return;
+
+        this.isSubmitting.set(true);
+        this.submitError.set(null);
+
+        const request = this.applyFormFields<UpdateLinkRequest>(
+            { longUrl: this.longUrl().trim() },
+            true,
+        );
+
+        try {
+            await this.linkService.updateLink(linkData.id, request).toPromise();
+        } catch (err: unknown) {
+            this.submitError.set(
+                err instanceof Error ? err.message : 'Failed to update link. Please try again.',
+            );
+            this.isSubmitting.set(false);
+            return;
+        }
+
+        this.linkSaved.emit();
         this.resetForm();
         this.linkService.linksResource.reload();
     }

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -16,15 +16,35 @@ Includes component tests for edit form pre-filling, delete confirmation flow, an
 
 ## Acceptance criteria
 
-- [ ] Each card has an ellipsis icon that opens an action menu (dropdown or popover)
-- [ ] Edit action opens a modal pre-filled with the Link's current data
-- [ ] Edit modal preserves Password Lock when the password field is left empty
-- [ ] Delete action shows a confirmation before removing the Link
-- [ ] Copy action writes the full shortened URL to clipboard
-- [ ] Copy action shows a brief confirmation (toast or tooltip)
-- [ ] Component tests verify edit pre-filling, delete confirmation, and copy behavior
+- [x] Each card has an ellipsis icon that opens an action menu (dropdown or popover)
+- [x] Edit action opens a modal pre-filled with the Link's current data
+- [x] Edit modal preserves Password Lock when the password field is left empty
+- [x] Delete action shows a confirmation before removing the Link
+- [x] Copy action writes the full shortened URL to clipboard
+- [x] Copy action shows a brief confirmation (toast or tooltip)
+- [x] Component tests verify edit pre-filling, delete confirmation, and copy behavior
 
 ## Blocked by
 
 - [01-prefactor-api-alignment](./01-prefactor-api-alignment.md)
 - [02-home-page-link-list-search](./02-home-page-link-list-search.md)
+
+## Comments
+
+### 2026-08-08 — Implemented
+
+**Files created:**
+- `Relink.Client/src/app/features/links/components/link-card-actions.ts` — ellipsis dropdown with Copy/Edit/Delete
+- `Relink.Client/src/app/features/links/components/link-card-actions.spec.ts` — 12 tests
+- `Relink.Client/src/app/features/links/components/edit-link-modal.ts` — pre-filled edit modal (PATCH)
+- `Relink.Client/src/app/shared/components/confirm-dialog.ts` — reusable confirmation dialog
+- `Relink.Client/src/app/shared/services/toast.service.ts` — toast notification service
+- `Relink.Client/src/app/shared/components/toast-container.ts` — fixed-position toast renderer
+
+**Files modified:**
+- `link.ts` — added `UpdateLinkRequest` type
+- `link-service.ts` — added `updateLink()` and `deleteLink()` methods
+- `home.ts` — integrated actions menu, edit modal, confirm dialog, toast container
+- `home.spec.ts` — added 8 tests for card actions, edit, and delete flows
+
+**Result:** All 63 tests pass, build compiles cleanly.

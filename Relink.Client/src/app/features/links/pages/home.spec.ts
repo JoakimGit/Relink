@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { vi } from 'vitest';
 import { HomePage } from './home';
 import { LinkService } from '../services/link-service';
+import { ToastService } from '../../../shared/services/toast.service';
 import { Link } from '../types/link';
+import { of } from 'rxjs';
 
 const mockLinks: Link[] = [
     {
@@ -46,7 +49,7 @@ function createMockLinkService(links: Link[]) {
             value: () => data(),
             isLoading: () => false,
             error: () => null as Error | null,
-            reload: () => { },
+            reload: vi.fn(),
         },
         tagsResource: {
             hasValue: () => true,
@@ -57,6 +60,15 @@ function createMockLinkService(links: Link[]) {
         createLink: () => ({
             toPromise: () => Promise.resolve({ shortCode: 'test123' }),
         }),
+        updateLink: vi.fn().mockReturnValue(of(undefined)),
+        deleteLink: vi.fn().mockReturnValue(of(undefined)),
+    };
+}
+
+function createMockToastService() {
+    return {
+        toasts: signal([]),
+        show: vi.fn(),
     };
 }
 
@@ -70,6 +82,7 @@ describe('HomePage', () => {
             imports: [HomePage],
             providers: [
                 { provide: LinkService, useValue: createMockLinkService(links) },
+                { provide: ToastService, useValue: createMockToastService() },
             ],
         });
 
@@ -241,6 +254,84 @@ describe('HomePage', () => {
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
             expect(cards.length).toBe(1);
             expect(cards[0].textContent).toContain('abc123');
+        });
+    });
+
+    describe('card actions menu', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        it('renders an ellipsis actions trigger on each card', async () => {
+            await fixture.whenStable();
+            const triggers = nativeElement.querySelectorAll('[data-testid="card-actions-trigger"]');
+            expect(triggers.length).toBe(2);
+        });
+
+        it('shows the actions menu when the ellipsis button is clicked', async () => {
+            await fixture.whenStable();
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+
+            const menu = nativeElement.querySelector('[data-testid="card-actions-menu"]');
+            expect(menu).toBeTruthy();
+            expect(menu!.textContent).toContain('Copy');
+            expect(menu!.textContent).toContain('Edit');
+            expect(menu!.textContent).toContain('Delete');
+        });
+    });
+
+    describe('edit action', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        it('opens the edit modal when Edit is clicked on a card', async () => {
+            await fixture.whenStable();
+            // The edit modal should initially be closed
+            const editModal = nativeElement.querySelector('app-link-form-modal');
+            expect(editModal).toBeTruthy();
+
+            // Click the actions trigger on the first card
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+
+            // Click Edit
+            const editBtn = nativeElement.querySelector('[data-testid="action-edit"]') as HTMLElement;
+            editBtn.click();
+            await fixture.whenStable();
+
+            // Wait for the setTimeout in openEditModal to flush
+            await new Promise((r) => setTimeout(r, 0));
+            await fixture.whenStable();
+
+            // The linkToEdit should now be set to the first link
+            expect(component.linkToEdit()).toEqual(mockLinks[0]);
+        });
+    });
+
+    describe('delete confirmation', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        it('shows the confirm dialog when Delete is clicked on a card', async () => {
+            await fixture.whenStable();
+
+            // Click the actions trigger on the first card
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+
+            // Click Delete
+            const deleteBtn = nativeElement.querySelector('[data-testid="action-delete"]') as HTMLElement;
+            deleteBtn.click();
+            await fixture.whenStable();
+
+            // The linkToDelete should be set
+            expect(component.linkToDelete()).toEqual(mockLinks[0]);
         });
     });
 });

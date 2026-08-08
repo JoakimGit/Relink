@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Relink.ApiService.ShortenLink.Endpoints;
@@ -5,25 +6,14 @@ namespace Relink.ApiService.ShortenLink.Endpoints;
 public class GetOriginalUrl : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) => app
-        .MapGet("/{shortcode}", Handle)
-        .WithSummary("Gets the longUrl of a link to redirect to")
-        .WithRequestValidation<Request>();
+        .MapGet("/{shortcode:regex(^[a-zA-Z0-9]+$)}", Handle)
+        .WithSummary("Gets the longUrl of a link to redirect to");
 
-    public record Request(string Shortcode);
-
-    public class RequestValidator : AbstractValidator<Request>
-    {
-        public RequestValidator()
-        {
-            RuleFor(x => x.Shortcode).NotEmpty();
-        }
-    }
-
-    private static async Task<Results<NotFound, RedirectHttpResult>> Handle(
+    public static async Task<Results<NotFound, RedirectHttpResult>> Handle(
         string shortcode,
         AppDbContext db,
         HybridCache hybridCache,
-        [FromServices] HttpContextAccessor httpContext,
+        [FromServices] IHttpContextAccessor httpContext,
         CancellationToken ct)
     {
         var link = await hybridCache.GetOrCreateAsync(shortcode, async token =>
@@ -42,7 +32,7 @@ public class GetOriginalUrl : IEndpoint
     private static async Task RecordVisit(
         Link link,
         AppDbContext db,
-        HttpContextAccessor contextAccessor,
+        IHttpContextAccessor contextAccessor,
         CancellationToken ct)
     {
         var context = contextAccessor.HttpContext;

@@ -1,7 +1,11 @@
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { LinkService } from "../services/link-service";
-import { CreateLinkModal } from "../components/create-link-modal";
+import { LinkFormModal } from "../components/link-form-modal";
+import { LinkCardActions } from "../components/link-card-actions";
+import { ConfirmDialog } from "../../../shared/components/confirm-dialog";
+import { ToastContainer } from "../../../shared/components/toast-container";
+import { ToastService } from "../../../shared/services/toast.service";
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
     lucideLock,
@@ -13,10 +17,19 @@ import {
     lucideEye,
 } from '@ng-icons/lucide';
 import { FormsModule } from '@angular/forms';
+import type { Link } from "../types/link";
 
 @Component({
     selector: "app-home-page",
-    imports: [NgIcon, FormsModule, DatePipe, CreateLinkModal],
+    imports: [
+        NgIcon,
+        FormsModule,
+        DatePipe,
+        LinkFormModal,
+        LinkCardActions,
+        ConfirmDialog,
+        ToastContainer,
+    ],
     viewProviders: [provideIcons({
         lucideLock,
         lucideCalendar,
@@ -35,7 +48,7 @@ import { FormsModule } from '@angular/forms';
                     <ng-icon name="lucideLink" class="text-primary text-xl" />
                     <h1 class="text-xl font-semibold tracking-tight">ReLink</h1>
                 </div>
-                <app-create-link-modal (linkCreated)="linksResource.reload()" />
+                <app-link-form-modal (linkSaved)="linksResource.reload()" />
             </div>
         </header>
 
@@ -64,15 +77,22 @@ import { FormsModule } from '@angular/forms';
                                 data-testid="link-card"
                                 class="bg-card text-card-foreground flex flex-col shadow-sm border border-border rounded-2xl p-4 hover:shadow-md transition-shadow"
                             >
-                                <!-- Short Code & Visit Count -->
+                                <!-- Short Code, Visit Count & Actions -->
                                 <div class="flex items-center justify-between mb-2">
                                     <h3 class="font-mono font-semibold text-sm text-primary tracking-wide">
                                         {{ link.id }}
                                     </h3>
-                                    <span class="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <ng-icon name="lucideEye" class="text-xs" />
-                                        {{ link.visitCount }}
-                                    </span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="flex items-center gap-1 text-xs text-muted-foreground mr-1">
+                                            <ng-icon name="lucideEye" class="text-xs" />
+                                            {{ link.visitCount }}
+                                        </span>
+                                        <app-link-card-actions
+                                            [link]="link"
+                                            (editRequested)="openEditModal($event)"
+                                            (deleteRequested)="openDeleteConfirm($event)"
+                                        />
+                                    </div>
                                 </div>
 
                                 <!-- Long URL -->
@@ -135,13 +155,45 @@ import { FormsModule } from '@angular/forms';
             }
         </div>
     </div>
+
+    <!-- Edit Modal (same component, edit mode via link input) -->
+    <app-link-form-modal
+        [link]="linkToEdit()"
+        (linkSaved)="linksResource.reload()"
+        (closed)="onEditModalClosed()"
+    />
+
+    <!-- Delete Confirmation Dialog -->
+    <app-confirm-dialog
+        title="Delete Link"
+        [message]="deleteMessage()"
+        confirmLabel="Delete"
+        (confirmed)="onDeleteConfirmed()"
+    />
+
+    <!-- Toast Container -->
+    <app-toast-container />
   `,
 })
 export class HomePage {
     private readonly linkService = inject(LinkService);
+    private readonly toastService = inject(ToastService);
     readonly linksResource = this.linkService.linksResource;
 
     readonly searchQuery = signal('');
+
+    // Edit state
+    readonly linkToEdit = signal<Link | null>(null);
+
+    // Delete state
+    readonly linkToDelete = signal<Link | null>(null);
+    readonly deleteConfirmDialog = viewChild.required(ConfirmDialog);
+    readonly deleteMessage = computed(() => {
+        const link = this.linkToDelete();
+        return link
+            ? `Are you sure you want to delete the link "${link.id}"? This action cannot be undone.`
+            : '';
+    });
 
     readonly filteredLinks = computed(() => {
         const links = this.linksResource.value();
@@ -156,4 +208,38 @@ export class HomePage {
             (link.tags && link.tags.some(tag => tag.name.toLowerCase().includes(query)))
         );
     });
+
+    openEditModal(link: Link): void {
+        // Clear first so re-selecting the same link re-triggers the effect
+        this.linkToEdit.set(null);
+        setTimeout(() => this.linkToEdit.set(link));
+    }
+
+    onEditModalClosed(): void {
+        this.linkToEdit.set(null);
+    }
+
+    openDeleteConfirm(link: Link): void {
+        this.linkToDelete.set(link);
+        this.deleteConfirmDialog().open();
+    }
+
+    onDeleteConfirmed(): void {
+        const link = this.linkToDelete();
+        if (!link) return;
+
+        this.linkService.deleteLink(link.id).subscribe({
+            next: () => {
+                this.toastService.show('Link deleted.');
+                this.linksResource.reload();
+                this.linkToDelete.set(null);
+                this.deleteConfirmDialog().close();
+            },
+            error: () => {
+                this.toastService.show('Failed to delete link.');
+                this.linkToDelete.set(null);
+                this.deleteConfirmDialog().close();
+            },
+        });
+    }
 }

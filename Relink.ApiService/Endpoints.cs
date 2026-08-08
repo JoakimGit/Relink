@@ -17,10 +17,14 @@ public static class Endpoints
         var endpoints = app.MapGroup("/links")
             .WithTags("Links");
 
+        // Redirect endpoint at root: /{shortcode}
+        // endpoints.MapEndpoint<GetOriginalUrl>();
+        app.MapEndpoint<GetOriginalUrl>();
+
         endpoints.MapEndpoint<ShortenUrl>();
-        endpoints.MapEndpoint<GetOriginalUrl>();
         endpoints.MapEndpoint<GetAllLinks>();
         endpoints.MapEndpoint<UpdateLink>();
+        endpoints.MapEndpoint<DeleteLink>();
     }
 
     private static void MapTagEndpoints(this IEndpointRouteBuilder app)
