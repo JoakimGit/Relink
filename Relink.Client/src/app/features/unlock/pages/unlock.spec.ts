@@ -22,7 +22,7 @@ describe('UnlockPage', () => {
 
     function setUp(shortcode = 'pwlock1') {
         mockUnlockLink = vi.fn().mockReturnValue(
-            of({ longUrl: 'https://example.com/target', fallbackUrl: null })
+            of({ longUrl: 'https://example.com/target' })
         );
 
         TestBed.configureTestingModule({

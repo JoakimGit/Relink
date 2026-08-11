@@ -53,3 +53,21 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("https_port", null);
     }
 }
+
+/// <summary>
+/// A mock IHttpClientFactory that returns an HttpClient with a configurable handler.
+/// </summary>
+public class MockHttpClientFactory : IHttpClientFactory
+{
+    private readonly HttpMessageHandler _handler;
+
+    public MockHttpClientFactory(HttpMessageHandler handler)
+    {
+        _handler = handler;
+    }
+
+    public HttpClient CreateClient(string name)
+    {
+        return new HttpClient(_handler) { BaseAddress = null };
+    }
+}

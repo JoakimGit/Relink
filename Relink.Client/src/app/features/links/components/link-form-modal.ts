@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, output, signal, effect } from "@angular/core";
+import { DatePipe } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Button } from "../../../shared/components/ui/button/button";
 import { Dialog } from "../../../shared/components/ui/dialog/dialog";
@@ -19,6 +20,7 @@ import {
     lucidePlus,
     lucideX,
     lucideLoader,
+    lucideGlobe,
 } from "@ng-icons/lucide";
 import { LinkService } from "../services/link-service";
 import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
@@ -27,6 +29,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
     selector: "app-link-form-modal",
     imports: [
         FormsModule,
+        DatePipe,
         Button,
         Dialog,
         DialogClose,
@@ -48,6 +51,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
             lucidePlus,
             lucideX,
             lucideLoader,
+            lucideGlobe,
         }),
     ],
     template: `
@@ -57,7 +61,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                 <button
                     appDialogTrigger
                     appBtn
-                    class="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+                    class="inline-flex items-center cursor-pointer gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
                     (click)="openDialog()"
                 >
                     <ng-icon name="lucidePlus" class="text-sm" />
@@ -123,20 +127,6 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                             [ngModel]="notes()"
                             (ngModelChange)="notes.set($event)"
                         ></textarea>
-                    </div>
-
-                    <!-- Fallback URL -->
-                    <div class="flex flex-col gap-1.5">
-                        <label appLabel for="linkForm-fallbackUrl">Fallback URL</label>
-                        <input
-                            appInput
-                            id="linkForm-fallbackUrl"
-                            name="fallbackUrl"
-                            type="url"
-                            placeholder="https://backup.example.com"
-                            [ngModel]="fallbackUrl()"
-                            (ngModelChange)="fallbackUrl.set($event)"
-                        />
                     </div>
 
                     <!-- Start Date & Expiration Date -->
@@ -256,6 +246,40 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                         }
                     </div>
 
+                    <!-- Metadata (read-only, edit mode only) -->
+                    @if (isEditMode() && link()?.metadata?.title) {
+                        <div data-testid="metadata-section" class="rounded-lg border border-border bg-muted/30 p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <ng-icon name="lucideGlobe" class="text-muted-foreground text-sm" />
+                                <h4 class="text-sm font-medium text-foreground">Metadata</h4>
+                                @if (link()?.metadata?.lastScrapedAt) {
+                                    <span class="text-xs text-muted-foreground">
+                                        · scraped {{ link()?.metadata?.lastScrapedAt | date:'medium' }}
+                                    </span>
+                                }
+                            </div>
+                            <div class="flex gap-3">
+                                @if (link()?.metadata?.imageUrl) {
+                                    <img
+                                        [src]="link()?.metadata?.imageUrl"
+                                        [alt]="link()?.metadata?.title"
+                                        class="w-16 h-16 rounded-md object-cover shrink-0 bg-muted"
+                                        (error)="$any($event.target).style.display = 'none'"
+                                    />
+                                }
+                                <div class="min-w-0 space-y-1">
+                                    <p class="text-sm font-medium text-foreground">{{ link()?.metadata?.title }}</p>
+                                    @if (link()?.metadata?.description) {
+                                        <p class="text-xs text-muted-foreground line-clamp-2">{{ link()?.metadata?.description }}</p>
+                                    }
+                                    @if (link()?.metadata?.siteName) {
+                                        <p class="text-xs text-muted-foreground">{{ link()?.metadata?.siteName }}</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                     <!-- Error message -->
                     @if (submitError()) {
                         <p data-testid="submit-error" class="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
@@ -308,7 +332,6 @@ export class LinkFormModal {
     readonly longUrl = signal("");
     readonly preferredShortCode = signal("");
     readonly notes = signal("");
-    readonly fallbackUrl = signal("");
     readonly startDate = signal("");
     readonly expirationDate = signal("");
     readonly password = signal("");
@@ -379,7 +402,6 @@ export class LinkFormModal {
         this.longUrl.set(linkData.longUrl);
         this.preferredShortCode.set(linkData.id);
         this.notes.set(linkData.notes ?? "");
-        this.fallbackUrl.set(linkData.fallbackUrl ?? "");
         this.startDate.set(linkData.startDate ? linkData.startDate.split("T")[0] : "");
         this.expirationDate.set(linkData.expirationDate ? linkData.expirationDate.split("T")[0] : "");
         this.password.set("");
@@ -399,7 +421,6 @@ export class LinkFormModal {
         this.longUrl.set("");
         this.preferredShortCode.set("");
         this.notes.set("");
-        this.fallbackUrl.set("");
         this.startDate.set("");
         this.expirationDate.set("");
         this.password.set("");
@@ -487,10 +508,6 @@ export class LinkFormModal {
         const notesVal = s(this.notes());
         if (notesVal) (request as Record<string, unknown>)['notes'] = notesVal;
         else if (nullOutEmpty) (request as Record<string, unknown>)['notes'] = null;
-
-        const fallback = s(this.fallbackUrl());
-        if (fallback) (request as Record<string, unknown>)['fallbackUrl'] = fallback;
-        else if (nullOutEmpty) (request as Record<string, unknown>)['fallbackUrl'] = null;
 
         const start = date(this.startDate());
         if (start) (request as Record<string, unknown>)['startDate'] = start;

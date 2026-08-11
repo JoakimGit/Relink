@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
+import { of, throwError } from 'rxjs';
 import { LinkCardActions } from './link-card-actions';
 import { ToastService } from '../../../shared/services/toast.service';
 import { LinkService } from '../services/link-service';
@@ -11,7 +12,6 @@ const mockLink: Link = {
     longUrl: 'https://example.com/very-long-url',
     createdAt: '2025-01-15T10:30:00Z',
     notes: 'Example link',
-    fallbackUrl: null,
     startDate: '2025-06-01T00:00:00Z',
     expirationDate: '2025-12-31T23:59:59Z',
     passwordHash: 'hash123',
@@ -27,6 +27,7 @@ const mockLink: Link = {
 function createMockLinkService() {
     return {
         redirectBaseUrl: 'https://localhost:7445',
+        scrapeMetadata: vi.fn().mockReturnValue(of({ title: 'Test', description: null, imageUrl: null, siteName: null, lastScrapedAt: '' })),
     };
 }
 
@@ -245,6 +246,146 @@ describe('LinkCardActions', () => {
 
             const deleteBtn = nativeElement.querySelector('[data-testid="action-delete"]') as HTMLElement;
             deleteBtn.click();
+            await fixture.whenStable();
+
+            expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeFalsy();
+        });
+    });
+
+    describe('scrape action', () => {
+        let mockLinkService: ReturnType<typeof createMockLinkService>;
+        let mockToastService: ReturnType<typeof createMockToastService>;
+
+        beforeEach(() => {
+            mockLinkService = createMockLinkService();
+            mockToastService = createMockToastService();
+
+            TestBed.configureTestingModule({
+                imports: [LinkCardActions],
+                providers: [
+                    { provide: ToastService, useValue: mockToastService },
+                    { provide: LinkService, useValue: mockLinkService },
+                ],
+            });
+
+            fixture = TestBed.createComponent(LinkCardActions);
+            fixture.componentRef.setInput('link', mockLink);
+            component = fixture.componentInstance;
+            nativeElement = fixture.nativeElement;
+        });
+
+        async function openMenuAndGetScrapeButton(): Promise<HTMLElement> {
+            await fixture.whenStable();
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+            return nativeElement.querySelector('[data-testid="action-scrape"]') as HTMLElement;
+        }
+
+        it('shows a "Scrape Metadata" button in the menu', async () => {
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            expect(scrapeBtn).toBeTruthy();
+            expect(scrapeBtn.textContent).toContain('Scrape Metadata');
+        });
+
+        it('calls scrapeMetadata on the service when clicked', async () => {
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
+            await fixture.whenStable();
+
+            expect(mockLinkService.scrapeMetadata).toHaveBeenCalledWith('abc123');
+        });
+
+        it('emits metadataScraped event after successful scrape', async () => {
+            const scrapeSpy = vi.fn();
+            component.metadataScraped.subscribe(scrapeSpy);
+
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
+            await fixture.whenStable();
+
+            expect(scrapeSpy).toHaveBeenCalledWith('abc123');
+        });
+
+        it('shows a success toast when scraping completes', async () => {
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
+            await fixture.whenStable();
+
+            expect(mockToastService.show).toHaveBeenCalledWith('Metadata scraped!');
+        });
+
+        it('closes the menu after successful scrape', async () => {
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
+            await fixture.whenStable();
+
+            expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeFalsy();
+        });
+
+        it('sets isScraping to true while request is pending', async () => {
+            // Simulate a pending request that doesn't complete
+            mockLinkService.scrapeMetadata = vi.fn().mockReturnValue({
+                subscribe: vi.fn(),
+            });
+
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
+            await fixture.whenStable();
+
+            expect(component.isScraping()).toBe(true);
+        });
+    });
+
+    describe('scrape action failure', () => {
+        let mockToastService: ReturnType<typeof createMockToastService>;
+
+        beforeEach(() => {
+            mockToastService = createMockToastService();
+            const failService = createMockLinkService();
+            failService.scrapeMetadata = vi.fn().mockReturnValue(throwError(() => new Error('Scrape failed')));
+
+            TestBed.configureTestingModule({
+                imports: [LinkCardActions],
+                providers: [
+                    { provide: ToastService, useValue: mockToastService },
+                    { provide: LinkService, useValue: failService },
+                ],
+            });
+
+            fixture = TestBed.createComponent(LinkCardActions);
+            fixture.componentRef.setInput('link', mockLink);
+            component = fixture.componentInstance;
+            nativeElement = fixture.nativeElement;
+        });
+
+        async function openMenuAndGetScrapeButton(): Promise<HTMLElement> {
+            await fixture.whenStable();
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+            return nativeElement.querySelector('[data-testid="action-scrape"]') as HTMLElement;
+        }
+
+        it('shows an error toast when scraping fails', async () => {
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
+            await fixture.whenStable();
+
+            expect(mockToastService.show).toHaveBeenCalledWith('Failed to scrape metadata.');
+        });
+
+        it('resets isScraping to false after failed scrape', async () => {
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
+            await fixture.whenStable();
+
+            expect(component.isScraping()).toBe(false);
+        });
+
+        it('closes the menu after failed scrape', async () => {
+            const scrapeBtn = await openMenuAndGetScrapeButton();
+            scrapeBtn.click();
             await fixture.whenStable();
 
             expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeFalsy();

@@ -13,7 +13,6 @@ const mockLinks: Link[] = [
         longUrl: 'https://example.com/very-long-url-that-should-be-truncated',
         createdAt: '2025-01-15T10:30:00Z',
         notes: 'Example link',
-        fallbackUrl: null,
         startDate: '2025-06-01T00:00:00Z',
         expirationDate: '2025-12-31T23:59:59Z',
         passwordHash: 'hash123',
@@ -24,13 +23,21 @@ const mockLinks: Link[] = [
             { id: 1, name: 'Work' },
             { id: 2, name: 'Important' },
         ],
+        metadata: {
+            id: 1,
+            shortenedLinkId: 'abc123',
+            title: 'Example Page Title',
+            description: 'A description of the page',
+            imageUrl: 'https://example.com/og-image.png',
+            siteName: 'Example Site',
+            lastScrapedAt: '2025-06-15T12:00:00Z',
+        },
     },
     {
         id: 'xyz789',
         longUrl: 'https://another-site.com/page',
         createdAt: '2025-03-20T08:00:00Z',
         notes: null,
-        fallbackUrl: 'https://fallback.example.com',
         startDate: null,
         expirationDate: null,
         passwordHash: null,
@@ -38,6 +45,7 @@ const mockLinks: Link[] = [
         visitCount: 5,
         isLocked: false,
         tags: [{ id: 3, name: 'Personal' }],
+        metadata: null,
     },
 ];
 

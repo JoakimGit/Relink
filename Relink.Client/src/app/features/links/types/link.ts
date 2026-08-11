@@ -3,12 +3,21 @@ export type Tag = {
     name: string;
 };
 
+export type LinkMetadata = {
+    id: number;
+    shortenedLinkId: string;
+    title: string | null;
+    description: string | null;
+    imageUrl: string | null;
+    siteName: string | null;
+    lastScrapedAt: string | null;
+};
+
 export type Link = {
     id: string;
     longUrl: string;
     createdAt: string;
     notes: string | null;
-    fallbackUrl: string | null;
     startDate: string | null;
     expirationDate: string | null;
     passwordHash: string | null;
@@ -17,13 +26,13 @@ export type Link = {
     isLocked: boolean;
 
     tags?: Array<Tag>;
+    metadata?: LinkMetadata | null;
 };
 
 export type CreateLinkRequest = {
     longUrl: string;
     preferedShortCode?: string;
     notes?: string;
-    fallbackUrl?: string;
     startDate?: string;
     expirationDate?: string;
     password?: string;
@@ -39,7 +48,6 @@ export type UpdateLinkRequest = {
     longUrl: string;
     preferedShortCode?: string;
     notes?: string;
-    fallbackUrl?: string;
     startDate?: string | null;
     expirationDate?: string | null;
     password?: string | null;
@@ -47,7 +55,8 @@ export type UpdateLinkRequest = {
     tags?: string[];
 };
 
+export type ScrapeMetadataResponse = Pick<LinkMetadata, 'title' | 'description' | 'imageUrl' | 'siteName'> & { lastScrapedAt: string };
+
 export type UnlockResponse = {
     longUrl: string;
-    fallbackUrl: string | null;
 };

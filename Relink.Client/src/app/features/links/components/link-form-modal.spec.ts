@@ -18,7 +18,6 @@ const mockLink: Link = {
     longUrl: 'https://example.com/original-url',
     createdAt: '2025-01-15T10:30:00Z',
     notes: 'Example notes',
-    fallbackUrl: null,
     startDate: '2025-06-01T00:00:00Z',
     expirationDate: '2025-12-31T23:59:59Z',
     passwordHash: 'hash123',
@@ -29,6 +28,15 @@ const mockLink: Link = {
         { id: 1, name: 'Work' },
         { id: 2, name: 'Important' },
     ],
+    metadata: {
+        id: 1,
+        shortenedLinkId: 'abc123',
+        title: 'Scraped Page Title',
+        description: 'A scraped description of the page',
+        imageUrl: 'https://example.com/scraped-image.png',
+        siteName: 'Example Site',
+        lastScrapedAt: '2025-06-15T12:00:00Z',
+    },
 };
 
 function createMockLinkService() {
@@ -132,7 +140,6 @@ describe('LinkFormModal', () => {
             expect(queryInput('longUrl')).toBeTruthy();
             expect(queryInput('preferredShortCode')).toBeTruthy();
             expect(document.body.querySelector('textarea[name="notes"]')).toBeTruthy();
-            expect(queryInput('fallbackUrl')!.type).toBe('url');
             expect(queryInput('startDate')!.type).toBe('date');
             expect(queryInput('expirationDate')!.type).toBe('date');
             expect(queryInput('password')!.type).toBe('password');
@@ -422,6 +429,72 @@ describe('LinkFormModal', () => {
             component.resetForm();
 
             expect(emitted).toHaveBeenCalled();
+        });
+    });
+
+    describe('metadata display in edit mode', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        function openEditDialog(): void {
+            fixture.componentRef.setInput('link', mockLink);
+        }
+
+        it('does not show metadata section in create mode', async () => {
+            await fixture.whenStable();
+            openCreateDialog();
+            await fixture.whenStable();
+
+            const metadataSection = document.body.querySelector('[data-testid="metadata-section"]');
+            expect(metadataSection).toBeFalsy();
+        });
+
+        it('shows metadata section when editing a link with metadata', async () => {
+            await fixture.whenStable();
+            openEditDialog();
+            await fixture.whenStable();
+
+            const metadataSection = document.body.querySelector('[data-testid="metadata-section"]');
+            expect(metadataSection).toBeTruthy();
+        });
+
+        it('displays scraped title in metadata section', async () => {
+            await fixture.whenStable();
+            openEditDialog();
+            await fixture.whenStable();
+
+            const metadataSection = document.body.querySelector('[data-testid="metadata-section"]');
+            expect(metadataSection!.textContent).toContain('Scraped Page Title');
+        });
+
+        it('displays scraped description in metadata section', async () => {
+            await fixture.whenStable();
+            openEditDialog();
+            await fixture.whenStable();
+
+            const metadataSection = document.body.querySelector('[data-testid="metadata-section"]');
+            expect(metadataSection!.textContent).toContain('A scraped description of the page');
+        });
+
+        it('displays site name in metadata section', async () => {
+            await fixture.whenStable();
+            openEditDialog();
+            await fixture.whenStable();
+
+            const metadataSection = document.body.querySelector('[data-testid="metadata-section"]');
+            expect(metadataSection!.textContent).toContain('Example Site');
+        });
+
+        it('displays scraped image in metadata section', async () => {
+            await fixture.whenStable();
+            openEditDialog();
+            await fixture.whenStable();
+
+            const metadataSection = document.body.querySelector('[data-testid="metadata-section"]');
+            const img = metadataSection!.querySelector('img');
+            expect(img).toBeTruthy();
+            expect(img!.getAttribute('src')).toBe('https://example.com/scraped-image.png');
         });
     });
 });

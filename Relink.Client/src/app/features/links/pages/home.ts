@@ -91,6 +91,7 @@ import type { Link } from "../types/link";
                                             [link]="link"
                                             (editRequested)="openEditModal($event)"
                                             (deleteRequested)="openDeleteConfirm($event)"
+                                            (metadataScraped)="linksResource.reload()"
                                         />
                                     </div>
                                 </div>
@@ -117,6 +118,9 @@ import type { Link } from "../types/link";
                                             <ng-icon name="lucideCalendar" class="text-xs" />
                                             @if (link.expirationDate) {
                                                 <span>{{ link.expirationDate | date:'dd.MM.yyyy' }}</span>
+                                            }
+                                            @if (link.startDate) {
+                                                <span>{{ link.startDate | date:'dd.MM.yyyy' }}</span>
                                             }
                                         </span>
                                     }

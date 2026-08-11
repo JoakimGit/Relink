@@ -34,6 +34,13 @@ var builder = WebApplication.CreateBuilder(args);
 
     builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
+    builder.Services.AddHttpClient();
+
+    builder.Services.ConfigureHttpJsonOptions(options =>
+    {
+        options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
     builder.Services.AddCors();
 }
 
