@@ -36,7 +36,7 @@ import type { Link } from '../types/link';
                 (click)="toggleMenu()"
                 [attr.aria-expanded]="isOpen()"
                 aria-haspopup="true"
-                [attr.aria-label]="'Actions for ' + link().id"
+                [attr.aria-label]="'Actions for ' + link().title"
             >
                 <ng-icon name="lucideEllipsisVertical" class="text-muted-foreground" />
             </button>

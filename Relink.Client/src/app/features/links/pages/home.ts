@@ -1,20 +1,14 @@
 import { Component, computed, inject, signal, viewChild } from "@angular/core";
-import { DatePipe } from "@angular/common";
 import { LinkService } from "../services/link-service";
 import { LinkFormModal } from "../components/link-form-modal";
-import { LinkCardActions } from "../components/link-card-actions";
+import { LinkCard } from "../components/link-card";
 import { ConfirmDialog } from "../../../shared/components/confirm-dialog";
 import { ToastContainer } from "../../../shared/components/toast-container";
 import { ToastService } from "../../../shared/services/toast.service";
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-    lucideLock,
-    lucideCalendar,
-    lucideKey,
     lucideSearch,
-    lucidePlus,
     lucideLink,
-    lucideEye,
 } from '@ng-icons/lucide';
 import { FormsModule } from '@angular/forms';
 import type { Link } from "../types/link";
@@ -24,20 +18,14 @@ import type { Link } from "../types/link";
     imports: [
         NgIcon,
         FormsModule,
-        DatePipe,
         LinkFormModal,
-        LinkCardActions,
+        LinkCard,
         ConfirmDialog,
         ToastContainer,
     ],
     viewProviders: [provideIcons({
-        lucideLock,
-        lucideCalendar,
-        lucideKey,
         lucideSearch,
-        lucidePlus,
         lucideLink,
-        lucideEye,
     })],
     template: `
     <div class="min-h-screen">
@@ -73,73 +61,12 @@ import type { Link } from "../types/link";
                 @if (links.length > 0) {
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         @for (link of links; track link.id) {
-                            <div
-                                data-testid="link-card"
-                                class="bg-card text-card-foreground flex flex-col shadow-sm border border-border rounded-2xl p-4 hover:shadow-md transition-shadow"
-                            >
-                                <!-- Short Code, Visit Count & Actions -->
-                                <div class="flex items-center justify-between mb-2">
-                                    <h3 class="font-mono font-semibold text-sm text-primary tracking-wide">
-                                        {{ link.id }}
-                                    </h3>
-                                    <div class="flex items-center gap-1">
-                                        <span class="flex items-center gap-1 text-xs text-muted-foreground mr-1">
-                                            <ng-icon name="lucideEye" class="text-xs" />
-                                            {{ link.visitCount }}
-                                        </span>
-                                        <app-link-card-actions
-                                            [link]="link"
-                                            (editRequested)="openEditModal($event)"
-                                            (deleteRequested)="openDeleteConfirm($event)"
-                                            (metadataScraped)="linksResource.reload()"
-                                        />
-                                    </div>
-                                </div>
-
-                                <!-- Long URL -->
-                                <p class="text-xs text-muted-foreground truncate mb-3" [title]="link.longUrl">
-                                    {{ link.longUrl }}
-                                </p>
-
-                                <!-- Constraint Icons -->
-                                <div class="flex items-center gap-2 mb-3">
-                                    @if (link.isLocked) {
-                                        <span data-testid="lock-icon" class="flex items-center gap-1 text-xs text-destructive" title="Locked">
-                                            <ng-icon name="lucideLock" class="text-xs" />
-                                        </span>
-                                    }
-                                    @if (link.passwordHash) {
-                                        <span data-testid="password-icon" class="flex items-center gap-1 text-xs text-amber-500" title="Password protected">
-                                            <ng-icon name="lucideKey" class="text-xs" />
-                                        </span>
-                                    }
-                                    @if (link.startDate || link.expirationDate) {
-                                        <span data-testid="calendar-icon" class="flex items-center gap-1 text-xs text-blue-500" title="Date restricted">
-                                            <ng-icon name="lucideCalendar" class="text-xs" />
-                                            @if (link.expirationDate) {
-                                                <span>{{ link.expirationDate | date:'dd.MM.yyyy' }}</span>
-                                            }
-                                            @if (link.startDate) {
-                                                <span>{{ link.startDate | date:'dd.MM.yyyy' }}</span>
-                                            }
-                                        </span>
-                                    }
-                                </div>
-
-                                <!-- Tags -->
-                                @if (link.tags && link.tags.length > 0) {
-                                    <div class="flex flex-wrap gap-1.5 mt-auto pt-3 border-t border-border">
-                                        @for (tag of link.tags; track tag.id) {
-                                            <span
-                                                data-testid="tag-chip"
-                                                class="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-                                            >
-                                                {{ tag.name }}
-                                            </span>
-                                        }
-                                    </div>
-                                }
-                            </div>
+                            <app-link-card
+                                [link]="link"
+                                (editRequested)="openEditModal($event)"
+                                (deleteRequested)="openDeleteConfirm($event)"
+                                (metadataScraped)="linksResource.reload()"
+                            />
                         }
                     </div>
                 } @else {

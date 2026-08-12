@@ -15,6 +15,7 @@ export type LinkMetadata = {
 
 export type Link = {
     id: string;
+    title: string;
     longUrl: string;
     createdAt: string;
     notes: string | null;
@@ -31,6 +32,7 @@ export type Link = {
 
 export type CreateLinkRequest = {
     longUrl: string;
+    title: string;
     preferedShortCode?: string;
     notes?: string;
     startDate?: string;
@@ -42,10 +44,12 @@ export type CreateLinkRequest = {
 
 export type CreateLinkResponse = {
     shortCode: string;
+    title: string;
 };
 
 export type UpdateLinkRequest = {
     longUrl: string;
+    title: string;
     preferedShortCode?: string;
     notes?: string;
     startDate?: string | null;

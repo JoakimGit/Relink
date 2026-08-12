@@ -76,12 +76,33 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                         @if (isEditMode()) {
                             Update the details for <span class="font-mono text-foreground">{{ editLinkId() }}</span>.
                         } @else {
-                            Fill in the details for your new shortened link. Only the Long URL is required.
+                            Fill in the details for your new shortened link. Title and Long URL are required.
                         }
                     </p>
                 </app-dialog-header>
 
                 <form class="flex flex-col gap-4" (submit)="onSubmit($event)">
+                    <!-- Title -->
+                    <div class="flex flex-col gap-1.5">
+                        <label appLabel for="linkForm-title">
+                            Title <span class="text-destructive">*</span>
+                        </label>
+                        <input
+                            appInput
+                            id="linkForm-title"
+                            name="title"
+                            type="text"
+                            placeholder="A short, human-readable name"
+                            maxlength="60"
+                            [ngModel]="title()"
+                            (ngModelChange)="title.set($event); titleTouched.set(true)"
+                            required
+                        />
+                        @if (titleTouched() && titleError()) {
+                            <p class="text-xs text-destructive">{{ titleError() }}</p>
+                        }
+                    </div>
+
                     <!-- Long URL -->
                     <div class="flex flex-col gap-1.5">
                         <label appLabel for="linkForm-longUrl">
@@ -329,6 +350,7 @@ export class LinkFormModal {
     readonly dialogState = signal<"open" | "closed">("closed");
 
     // ─── Form fields ────────────────────────────────────────────
+    readonly title = signal("");
     readonly longUrl = signal("");
     readonly preferredShortCode = signal("");
     readonly notes = signal("");
@@ -345,9 +367,17 @@ export class LinkFormModal {
     // ─── Submission state ───────────────────────────────────────
     readonly isSubmitting = signal(false);
     readonly submitError = signal<string | null>(null);
+    readonly titleTouched = signal(false);
     readonly longUrlTouched = signal(false);
 
     // ─── Validation ─────────────────────────────────────────────
+    readonly titleError = computed(() => {
+        const title = this.title().trim();
+        if (!title) return "Title is required.";
+        if (title.length > 60) return "Title must be 60 characters or fewer.";
+        return null;
+    });
+
     readonly longUrlError = computed(() => {
         const url = this.longUrl().trim();
         if (!url) return "Long URL is required.";
@@ -360,7 +390,11 @@ export class LinkFormModal {
     });
 
     readonly isFormValid = computed(() => {
-        return this.longUrlError() === null && !this.isSubmitting();
+        return (
+            this.titleError() === null &&
+            this.longUrlError() === null &&
+            !this.isSubmitting()
+        );
     });
 
     // ─── Tag suggestions ────────────────────────────────────────
@@ -399,6 +433,7 @@ export class LinkFormModal {
     }
 
     private preFillForm(linkData: Link): void {
+        this.title.set(linkData.title);
         this.longUrl.set(linkData.longUrl);
         this.preferredShortCode.set(linkData.id);
         this.notes.set(linkData.notes ?? "");
@@ -409,6 +444,7 @@ export class LinkFormModal {
         this.selectedTags.set(linkData.tags?.map((t) => t.name) ?? []);
         this.submitError.set(null);
         this.isSubmitting.set(false);
+        this.titleTouched.set(false);
         this.longUrlTouched.set(false);
     }
 
@@ -418,6 +454,7 @@ export class LinkFormModal {
     }
 
     resetForm() {
+        this.title.set("");
         this.longUrl.set("");
         this.preferredShortCode.set("");
         this.notes.set("");
@@ -429,6 +466,7 @@ export class LinkFormModal {
         this.selectedTags.set([]);
         this.submitError.set(null);
         this.isSubmitting.set(false);
+        this.titleTouched.set(false);
         this.longUrlTouched.set(false);
         this.dialogState.set("closed");
         this.closed.emit();
@@ -502,6 +540,9 @@ export class LinkFormModal {
             return !isNaN(n) && n > 0 ? n : null;
         };
 
+        const titleVal = s(this.title());
+        (request as Record<string, unknown>)['title'] = titleVal;
+
         const preferredCode = s(this.preferredShortCode());
         if (preferredCode) (request as Record<string, unknown>)['preferedShortCode'] = preferredCode;
 
@@ -535,7 +576,7 @@ export class LinkFormModal {
         this.submitError.set(null);
 
         const request = this.applyFormFields<CreateLinkRequest>(
-            { longUrl: this.longUrl().trim() },
+            { longUrl: this.longUrl().trim(), title: this.title().trim() },
             false,
         );
 
@@ -562,7 +603,7 @@ export class LinkFormModal {
         this.submitError.set(null);
 
         const request = this.applyFormFields<UpdateLinkRequest>(
-            { longUrl: this.longUrl().trim() },
+            { longUrl: this.longUrl().trim(), title: this.title().trim() },
             true,
         );
 

@@ -9,6 +9,7 @@ import type { Link } from '../types/link';
 
 const mockLink: Link = {
     id: 'abc123',
+    title: 'Example Link',
     longUrl: 'https://example.com/very-long-url',
     createdAt: '2025-01-15T10:30:00Z',
     notes: 'Example link',

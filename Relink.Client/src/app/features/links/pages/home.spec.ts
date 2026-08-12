@@ -10,6 +10,7 @@ import { of } from 'rxjs';
 const mockLinks: Link[] = [
     {
         id: 'abc123',
+        title: 'Example Docs',
         longUrl: 'https://example.com/very-long-url-that-should-be-truncated',
         createdAt: '2025-01-15T10:30:00Z',
         notes: 'Example link',
@@ -35,6 +36,7 @@ const mockLinks: Link[] = [
     },
     {
         id: 'xyz789',
+        title: 'Another Site',
         longUrl: 'https://another-site.com/page',
         createdAt: '2025-03-20T08:00:00Z',
         notes: null,
@@ -130,16 +132,25 @@ describe('HomePage', () => {
             expect(cards.length).toBe(2);
         });
 
-        it('displays Short Code on each card', async () => {
+        it('displays the Title as the most prominent text on each card', async () => {
             await fixture.whenStable();
             const card = nativeElement.querySelector('[data-testid="link-card"]');
-            expect(card!.textContent).toContain('abc123');
+            const title = card!.querySelector('[data-testid="link-card-title"]');
+            expect(title).toBeTruthy();
+            expect(title!.textContent).toContain('Example Docs');
         });
 
-        it('displays Long URL on each card', async () => {
+        it('does not display the Short Code on each card', async () => {
             await fixture.whenStable();
             const card = nativeElement.querySelector('[data-testid="link-card"]');
-            expect(card!.textContent).toContain('https://example.com/very-long-url');
+            expect(card!.textContent).not.toContain('abc123');
+        });
+
+        it('displays the domain on each card', async () => {
+            await fixture.whenStable();
+            const card = nativeElement.querySelector('[data-testid="link-card"]');
+            const domain = card!.querySelector('[data-testid="link-card-domain"]');
+            expect(domain!.textContent).toContain('example.com');
         });
 
         it('displays Visit Count on each card', async () => {
@@ -218,7 +229,7 @@ describe('HomePage', () => {
             // ASSERT
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
             expect(cards.length).toBe(1);
-            expect(cards[0].textContent).toContain('abc123');
+            expect(cards[0].textContent).toContain('Example Docs');
         });
 
         it('filters cards by Long URL', async () => {
@@ -226,7 +237,7 @@ describe('HomePage', () => {
             await fixture.whenStable();
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
             expect(cards.length).toBe(1);
-            expect(cards[0].textContent).toContain('xyz789');
+            expect(cards[0].textContent).toContain('Another Site');
         });
 
         it('filters cards by Tag name', async () => {
@@ -234,7 +245,7 @@ describe('HomePage', () => {
             await fixture.whenStable();
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
             expect(cards.length).toBe(1);
-            expect(cards[0].textContent).toContain('xyz789');
+            expect(cards[0].textContent).toContain('Another Site');
         });
 
         it('shows all cards when search is empty', async () => {
@@ -261,7 +272,7 @@ describe('HomePage', () => {
             await fixture.whenStable();
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
             expect(cards.length).toBe(1);
-            expect(cards[0].textContent).toContain('abc123');
+            expect(cards[0].textContent).toContain('Example Docs');
         });
     });
 

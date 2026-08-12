@@ -15,6 +15,7 @@ const mockTags: Tag[] = [
 
 const mockLink: Link = {
     id: 'abc123',
+    title: 'Example Link',
     longUrl: 'https://example.com/original-url',
     createdAt: '2025-01-15T10:30:00Z',
     notes: 'Example notes',
@@ -103,6 +104,12 @@ describe('LinkFormModal', () => {
         longUrlInput.dispatchEvent(new Event('input'));
     }
 
+    function fillValidTitle() {
+        const titleInput = queryInput('title')!;
+        titleInput.value = 'My Link';
+        titleInput.dispatchEvent(new Event('input'));
+    }
+
     // ─── Create mode ────────────────────────────────────────────
 
     describe('create mode - initial render', () => {
@@ -137,6 +144,7 @@ describe('LinkFormModal', () => {
         });
 
         it('has all expected form fields', () => {
+            expect(queryInput('title')).toBeTruthy();
             expect(queryInput('longUrl')).toBeTruthy();
             expect(queryInput('preferredShortCode')).toBeTruthy();
             expect(document.body.querySelector('textarea[name="notes"]')).toBeTruthy();
@@ -274,6 +282,28 @@ describe('LinkFormModal', () => {
             expect(errorElement).toBeTruthy();
             expect(errorElement!.textContent).toContain('valid URL');
         });
+
+        it('disables submit when Title is empty', async () => {
+            component.longUrl.set('https://example.com/test');
+            component.title.set('');
+            component.titleTouched.set(true);
+            await fixture.whenStable();
+
+            const submitBtn = document.body.querySelector('[data-testid="submit-button"]') as HTMLButtonElement;
+            expect(submitBtn.disabled).toBe(true);
+        });
+
+        it('shows error when Title exceeds 60 characters', async () => {
+            component.longUrl.set('https://example.com/test');
+            component.title.set('x'.repeat(61));
+            component.titleTouched.set(true);
+            await fixture.whenStable();
+
+            const errorElement = Array.from(document.body.querySelectorAll('p.text-destructive')).find(
+                (el) => el.textContent?.includes('60 characters'),
+            );
+            expect(errorElement).toBeTruthy();
+        });
     });
 
     describe('create mode - submission', () => {
@@ -285,6 +315,7 @@ describe('LinkFormModal', () => {
         });
 
         it('calls createLink with correct payload', async () => {
+            fillValidTitle();
             fillValidLongUrl();
 
             const preferredCodeInput = queryInput('preferredShortCode')!;
@@ -306,6 +337,7 @@ describe('LinkFormModal', () => {
             await fixture.whenStable();
 
             const payload: CreateLinkRequest = mockLinkService.createLink.mock.calls[0][0];
+            expect(payload.title).toBe('My Link');
             expect(payload.longUrl).toBe('https://example.com/test');
             expect(payload.preferedShortCode).toBe('mycode');
             expect(payload.notes).toBe('Test notes');
@@ -316,6 +348,7 @@ describe('LinkFormModal', () => {
             const emitted = vi.fn();
             component.linkSaved.subscribe(emitted);
 
+            fillValidTitle();
             fillValidLongUrl();
 
             const form = document.body.querySelector('form')!;
@@ -348,6 +381,9 @@ describe('LinkFormModal', () => {
 
             const dialogTitle = document.body.querySelector('[appDialogTitle]');
             expect(dialogTitle!.textContent).toContain('Edit Link');
+
+            const titleInput = queryInput('title')!;
+            expect(titleInput.value).toBe('Example Link');
 
             const longUrlInput = queryInput('longUrl')!;
             expect(longUrlInput.value).toBe('https://example.com/original-url');
@@ -399,6 +435,7 @@ describe('LinkFormModal', () => {
 
             expect(mockLinkService.updateLink).toHaveBeenCalled();
             const payload: UpdateLinkRequest = mockLinkService.updateLink.mock.calls[0][1];
+            expect(payload.title).toBe('Example Link');
             expect(payload.longUrl).toBe('https://example.com/updated');
             expect(payload.password).toBeUndefined(); // empty → not sent, preserves existing lock
         });
