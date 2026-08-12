@@ -22,8 +22,9 @@ _Avoid_: Custom short code, preferred shortcode
 The original, full-length URL that a Link redirects to.
 _Avoid_: Original URL, destination URL, target URL
 
-**Fallback URL**:
-A backup URL served when the Long URL is unreachable.
+**Title**:
+A short, human-readable name for a Link, required at creation. Displayed prominently on link cards and in search results. Distinct from Notes (a longer annotation) and from the scraped title in Link Metadata.
+_Avoid_: Name, label
 
 ### Visits & Analytics
 
@@ -72,5 +73,5 @@ _Avoid_: Folder, collection
 ### Metadata
 
 **Link Metadata**:
-Open Graph data scraped from the Link's target URL. Contains a scraped title, scraped description, image URL, and site name. Scraping is initiated manually by the user via a button in the UI; a background job performs the actual fetch. The scraped description is the target website's meta description — distinct from the user-written Notes on the Link.
+Open Graph data scraped from the Link's target URL. Contains a scraped title, scraped description, image URL, and site name. Scraped automatically and lazily — when a social media crawler first requests the Link — so shared Links unfurl with a rich preview. The scraped title is distinct from the user-written Title on the Link.
 _Avoid_: OG data, link preview, scraped data
