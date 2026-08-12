@@ -7,6 +7,7 @@ import {
     lucideCopy,
     lucideGlobe,
     lucideLoader,
+    lucideChartColumn,
 } from '@ng-icons/lucide';
 import { Button } from '../../../shared/components/ui/button/button';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -28,6 +29,7 @@ import type { Link } from '../types/link';
             lucideCopy,
             lucideGlobe,
             lucideLoader,
+            lucideChartColumn,
         }),
     ],
     template: `
@@ -67,6 +69,14 @@ import type { Link } from '../types/link';
                         Edit
                     </button>
                     <button
+                        data-testid="action-analytics"
+                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
+                        (click)="onAnalytics()"
+                    >
+                        <ng-icon name="lucideChartColumn" class="text-xs" />
+                        Analytics
+                    </button>
+                    <button
                         data-testid="action-scrape"
                         class="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         [disabled]="isScraping()"
@@ -96,6 +106,7 @@ export class LinkCardActions {
     readonly link = input.required<Link>();
     readonly editRequested = output<Link>();
     readonly deleteRequested = output<Link>();
+    readonly analyticsRequested = output<Link>();
     readonly metadataScraped = output<string>();
 
     private readonly toastService = inject(ToastService);
@@ -138,6 +149,11 @@ export class LinkCardActions {
 
     onEdit(): void {
         this.editRequested.emit(this.link());
+        this.closeMenu();
+    }
+
+    onAnalytics(): void {
+        this.analyticsRequested.emit(this.link());
         this.closeMenu();
     }
 

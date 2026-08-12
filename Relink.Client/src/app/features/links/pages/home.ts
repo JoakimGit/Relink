@@ -3,6 +3,7 @@ import { LinkService } from "../services/link-service";
 import { GroupService } from "../services/group-service";
 import { LinkFormModal } from "../components/link-form-modal";
 import { LinkCard } from "../components/link-card";
+import { LinkAnalyticsModal } from "../components/link-analytics-modal";
 import { ConfirmDialog } from "../../../shared/components/confirm-dialog";
 import { ToastContainer } from "../../../shared/components/toast-container";
 import { ToastService } from "../../../shared/services/toast.service";
@@ -24,6 +25,7 @@ import type { Link } from "../types/link";
         FormsModule,
         LinkFormModal,
         LinkCard,
+        LinkAnalyticsModal,
         ConfirmDialog,
         ToastContainer,
         SortDropdown,
@@ -85,6 +87,7 @@ import type { Link } from "../types/link";
                                 [link]="link"
                                 (editRequested)="openEditModal($event)"
                                 (deleteRequested)="openDeleteConfirm($event)"
+                                (analyticsRequested)="openAnalyticsModal($event)"
                                 (metadataScraped)="linksResource.reload()"
                             />
                         }
@@ -122,6 +125,9 @@ import type { Link } from "../types/link";
         (confirmed)="onDeleteConfirmed()"
     />
 
+    <!-- Analytics Modal -->
+    <app-link-analytics-modal (visitCountReset)="onVisitCountReset()" />
+
     <!-- Toast Container -->
     <app-toast-container />
   `,
@@ -143,6 +149,10 @@ export class HomePage {
     // Delete state
     readonly linkToDelete = signal<Link | null>(null);
     readonly deleteConfirmDialog = viewChild.required(ConfirmDialog);
+
+    // Analytics state
+    readonly analyticsModal = viewChild.required(LinkAnalyticsModal);
+
     readonly deleteMessage = computed(() => {
         const link = this.linkToDelete();
         return link
@@ -226,6 +236,15 @@ export class HomePage {
     openDeleteConfirm(link: Link): void {
         this.linkToDelete.set(link);
         this.deleteConfirmDialog().open();
+    }
+
+    openAnalyticsModal(link: Link): void {
+        this.analyticsModal().open(link);
+    }
+
+    onVisitCountReset(): void {
+        // Refresh the grid so each card's Visit Count reflects the reset.
+        this.linksResource.reload();
     }
 
     onDeleteConfirmed(): void {

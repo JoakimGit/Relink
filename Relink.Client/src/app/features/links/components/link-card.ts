@@ -51,6 +51,7 @@ import type { Link } from '../types/link';
                     [link]="link()"
                     (editRequested)="editRequested.emit($event)"
                     (deleteRequested)="deleteRequested.emit($event)"
+                    (analyticsRequested)="analyticsRequested.emit($event)"
                     (metadataScraped)="metadataScraped.emit($event)"
                 />
             </div>
@@ -113,6 +114,7 @@ export class LinkCard {
     readonly link = input.required<Link>();
     readonly editRequested = output<Link>();
     readonly deleteRequested = output<Link>();
+    readonly analyticsRequested = output<Link>();
     readonly metadataScraped = output<string>();
 
     readonly domain = computed(() => domainOf(this.link().longUrl));

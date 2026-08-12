@@ -141,6 +141,17 @@ describe('LinkCardActions', () => {
             expect(deleteBtn).toBeTruthy();
             expect(deleteBtn!.textContent).toContain('Delete');
         });
+
+        it('shows an Analytics action button in the menu', async () => {
+            await fixture.whenStable();
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+
+            const analyticsBtn = nativeElement.querySelector('[data-testid="action-analytics"]');
+            expect(analyticsBtn).toBeTruthy();
+            expect(analyticsBtn!.textContent).toContain('Analytics');
+        });
     });
 
     describe('copy action', () => {
@@ -259,6 +270,39 @@ describe('LinkCardActions', () => {
 
             const deleteBtn = nativeElement.querySelector('[data-testid="action-delete"]') as HTMLElement;
             deleteBtn.click();
+            await fixture.whenStable();
+
+            expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeFalsy();
+        });
+    });
+
+    describe('analytics action', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        async function openMenuAndGetAnalyticsButton(): Promise<HTMLElement> {
+            await fixture.whenStable();
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+            return nativeElement.querySelector('[data-testid="action-analytics"]') as HTMLElement;
+        }
+
+        it('emits analyticsRequested with the link when Analytics is clicked', async () => {
+            const analyticsSpy = vi.fn();
+            component.analyticsRequested.subscribe(analyticsSpy);
+
+            const analyticsBtn = await openMenuAndGetAnalyticsButton();
+            analyticsBtn.click();
+            await fixture.whenStable();
+
+            expect(analyticsSpy).toHaveBeenCalledWith(mockLink);
+        });
+
+        it('closes the menu after Analytics is clicked', async () => {
+            const analyticsBtn = await openMenuAndGetAnalyticsButton();
+            analyticsBtn.click();
             await fixture.whenStable();
 
             expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeFalsy();

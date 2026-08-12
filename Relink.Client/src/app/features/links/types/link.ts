@@ -70,6 +70,28 @@ export type UpdateLinkRequest = {
 
 export type ScrapeMetadataResponse = Pick<LinkMetadata, 'title' | 'description' | 'imageUrl' | 'siteName'> & { lastScrapedAt: string };
 
+export type VisitBucket = {
+    start: string;
+    end: string;
+    count: number;
+};
+
+export type ReferrerCount = {
+    referrer: string;
+    count: number;
+};
+
+export type BrowserCount = {
+    browser: string;
+    count: number;
+};
+
+export type AnalyticsResponse = {
+    visitCounts: Array<VisitBucket>;
+    topReferrers: Array<ReferrerCount>;
+    browserBreakdown: Array<BrowserCount>;
+};
+
 export type UnlockResponse = {
     longUrl: string;
 };
