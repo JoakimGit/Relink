@@ -3,6 +3,7 @@ import { signal } from '@angular/core';
 import { vi } from 'vitest';
 import { HomePage } from './home';
 import { LinkService } from '../services/link-service';
+import { GroupService } from '../services/group-service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { Link } from '../types/link';
 import { of } from 'rxjs';
@@ -12,7 +13,7 @@ const mockLinks: Link[] = [
         id: 'abc123',
         title: 'Example Docs',
         longUrl: 'https://example.com/very-long-url-that-should-be-truncated',
-        createdAt: '2025-01-15T10:30:00Z',
+        createdAt: '2025-03-20T08:00:00Z',
         notes: 'Example link',
         startDate: '2025-06-01T00:00:00Z',
         expirationDate: '2025-12-31T23:59:59Z',
@@ -20,6 +21,7 @@ const mockLinks: Link[] = [
         maxVisits: 100,
         visitCount: 42,
         isLocked: true,
+        group: null,
         tags: [
             { id: 1, name: 'Work' },
             { id: 2, name: 'Important' },
@@ -38,7 +40,7 @@ const mockLinks: Link[] = [
         id: 'xyz789',
         title: 'Another Site',
         longUrl: 'https://another-site.com/page',
-        createdAt: '2025-03-20T08:00:00Z',
+        createdAt: '2025-01-15T10:30:00Z',
         notes: null,
         startDate: null,
         expirationDate: null,
@@ -46,6 +48,7 @@ const mockLinks: Link[] = [
         maxVisits: null,
         visitCount: 5,
         isLocked: false,
+        group: { id: 1, name: 'Work' },
         tags: [{ id: 3, name: 'Personal' }],
         metadata: null,
     },
@@ -82,6 +85,25 @@ function createMockToastService() {
     };
 }
 
+function createMockGroupService() {
+    const groupsData = signal([
+        { id: 1, name: 'Work' },
+        { id: 2, name: 'Empty' },
+    ]);
+    return {
+        groupsResource: {
+            hasValue: () => true,
+            value: () => groupsData(),
+            isLoading: () => false,
+            error: () => null as Error | null,
+            reload: vi.fn(),
+        },
+        createGroup: vi.fn().mockReturnValue(of({ id: 3, name: 'New' })),
+        renameGroup: vi.fn().mockReturnValue(of({ id: 1, name: 'Renamed' })),
+        deleteGroup: vi.fn().mockReturnValue(of(undefined)),
+    };
+}
+
 describe('HomePage', () => {
     let component: HomePage;
     let fixture: ComponentFixture<HomePage>;
@@ -92,6 +114,7 @@ describe('HomePage', () => {
             imports: [HomePage],
             providers: [
                 { provide: LinkService, useValue: createMockLinkService(links) },
+                { provide: GroupService, useValue: createMockGroupService() },
                 { provide: ToastService, useValue: createMockToastService() },
             ],
         });
@@ -117,6 +140,12 @@ describe('HomePage', () => {
             await fixture.whenStable();
             const input = nativeElement.querySelector('input[type="search"]');
             expect(input).toBeTruthy();
+        });
+
+        it('renders a sort dropdown next to the search input', async () => {
+            await fixture.whenStable();
+            const select = nativeElement.querySelector('[data-testid="sort-dropdown"]');
+            expect(select).toBeTruthy();
         });
 
         it('renders a create new Link button', async () => {
@@ -273,6 +302,118 @@ describe('HomePage', () => {
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
             expect(cards.length).toBe(1);
             expect(cards[0].textContent).toContain('Example Docs');
+        });
+
+        it('filters cards by Title', async () => {
+            component.searchQuery.set('Another');
+            await fixture.whenStable();
+            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
+            expect(cards.length).toBe(1);
+            expect(cards[0].textContent).toContain('Another Site');
+        });
+    });
+
+    describe('group filtering', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        it('lists All Links, every Group with its count, and Uncategorized', async () => {
+            await fixture.whenStable();
+            const pills = Array.from(
+                nativeElement.querySelectorAll('[data-testid="group-pill"]'),
+            ).map((p) => p.textContent);
+
+            expect(pills[0]).toContain('All Links');
+            expect(pills[0]).toContain('2');
+            expect(pills[1]).toContain('Work');
+            expect(pills[1]).toContain('1');
+            expect(pills[2]).toContain('Empty');
+            expect(pills[2]).toContain('0');
+            expect(pills[3]).toContain('Uncategorized');
+            expect(pills[3]).toContain('1');
+        });
+
+        it('filters the grid to a Group when its pill is selected', async () => {
+            await fixture.whenStable();
+            const pills = nativeElement.querySelectorAll('[data-testid="group-pill"]');
+            (pills[1] as HTMLElement).click();
+            await fixture.whenStable();
+
+            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
+            expect(cards.length).toBe(1);
+            expect(cards[0].textContent).toContain('Another Site');
+        });
+
+        it('filters the grid to Uncategorized links when that pill is selected', async () => {
+            await fixture.whenStable();
+            const pills = nativeElement.querySelectorAll('[data-testid="group-pill"]');
+            (pills[3] as HTMLElement).click();
+            await fixture.whenStable();
+
+            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
+            expect(cards.length).toBe(1);
+            expect(cards[0].textContent).toContain('Example Docs');
+        });
+
+        it('shows all links again when All Links is selected', async () => {
+            await fixture.whenStable();
+            const pills = nativeElement.querySelectorAll('[data-testid="group-pill"]');
+            (pills[3] as HTMLElement).click();
+            await fixture.whenStable();
+            (pills[0] as HTMLElement).click();
+            await fixture.whenStable();
+
+            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
+            expect(cards.length).toBe(2);
+        });
+    });
+
+    describe('sorting', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        it('sorts newest first by default', async () => {
+            await fixture.whenStable();
+            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
+            expect(cards[0].textContent).toContain('Example Docs');
+        });
+
+        it('sorts oldest first when selected', async () => {
+            component.sortOrder.set('oldest');
+            await fixture.whenStable();
+            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
+            expect(cards[0].textContent).toContain('Another Site');
+        });
+
+        it('sorts most visited first when selected', async () => {
+            component.sortOrder.set('mostVisited');
+            await fixture.whenStable();
+            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
+            expect(cards[0].textContent).toContain('Example Docs');
+        });
+
+        it('sorts alphabetically by Title when selected', async () => {
+            component.sortOrder.set('titleAsc');
+            await fixture.whenStable();
+            const titles = Array.from(
+                nativeElement.querySelectorAll('[data-testid="link-card-title"]'),
+            ).map((t) => t.textContent?.trim());
+            expect(titles).toEqual(['Another Site', 'Example Docs']);
+        });
+    });
+
+    describe('manage groups', () => {
+        beforeEach(() => {
+            setUp();
+        });
+
+        it('renders a Manage Groups button', async () => {
+            await fixture.whenStable();
+            const button = nativeElement.querySelector('[data-testid="manage-groups-trigger"]');
+            expect(button).toBeTruthy();
+            expect(button!.textContent).toContain('Manage Groups');
         });
     });
 

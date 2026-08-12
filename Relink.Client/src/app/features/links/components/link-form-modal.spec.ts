@@ -3,6 +3,7 @@ import { signal } from '@angular/core';
 import { vi } from 'vitest';
 import { LinkFormModal } from './link-form-modal';
 import { LinkService } from '../services/link-service';
+import { GroupService } from '../services/group-service';
 import type { Link, CreateLinkRequest, UpdateLinkRequest, Tag } from '../types/link';
 import { of } from 'rxjs';
 
@@ -29,6 +30,7 @@ const mockLink: Link = {
         { id: 1, name: 'Work' },
         { id: 2, name: 'Important' },
     ],
+    group: { id: 1, name: 'Work' },
     metadata: {
         id: 1,
         shortenedLinkId: 'abc123',
@@ -63,19 +65,45 @@ function createMockLinkService() {
     };
 }
 
+function createMockGroupService() {
+    const groupsData = signal([
+        { id: 1, name: 'Work' },
+        { id: 2, name: 'Personal' },
+    ]);
+    return {
+        groupsResource: {
+            hasValue: () => true,
+            value: () => groupsData(),
+            isLoading: () => false,
+            error: () => null as Error | null,
+            reload: vi.fn(),
+        },
+        createGroup: vi.fn().mockImplementation((name: string) => {
+            const group = { id: 3, name };
+            groupsData.update((groups) => [...groups, group]);
+            return of(group);
+        }),
+        renameGroup: vi.fn().mockReturnValue(of({ id: 1, name: 'Renamed' })),
+        deleteGroup: vi.fn().mockReturnValue(of(undefined)),
+    };
+}
+
 describe('LinkFormModal', () => {
     let component: LinkFormModal;
     let fixture: ComponentFixture<LinkFormModal>;
     let nativeElement: HTMLElement;
     let mockLinkService: ReturnType<typeof createMockLinkService>;
+    let mockGroupService: ReturnType<typeof createMockGroupService>;
 
     function setUp() {
         mockLinkService = createMockLinkService();
+        mockGroupService = createMockGroupService();
 
         TestBed.configureTestingModule({
             imports: [LinkFormModal],
             providers: [
                 { provide: LinkService, useValue: mockLinkService },
+                { provide: GroupService, useValue: mockGroupService },
             ],
         });
 
@@ -359,6 +387,65 @@ describe('LinkFormModal', () => {
         });
     });
 
+    describe('create mode - group assignment', () => {
+        beforeEach(async () => {
+            setUp();
+            await fixture.whenStable();
+            openCreateDialog();
+            await fixture.whenStable();
+        });
+
+        it('shows a Group select defaulting to Uncategorized', () => {
+            const select = document.body.querySelector('[data-testid="group-select"]') as HTMLSelectElement;
+            expect(select).toBeTruthy();
+            expect(select.value).toBe('');
+            expect(select.options[0].textContent).toContain('Uncategorized');
+        });
+
+        it('lists existing Groups in the select', () => {
+            const select = document.body.querySelector('[data-testid="group-select"]') as HTMLSelectElement;
+            const labels = Array.from(select.options).map((o) => o.textContent?.trim());
+            expect(labels).toContain('Work');
+            expect(labels).toContain('Personal');
+        });
+
+        it('creates a new Group inline and selects it', async () => {
+            const toggle = document.body.querySelector('[data-testid="new-group-toggle"]') as HTMLElement;
+            toggle.click();
+            await fixture.whenStable();
+
+            const input = document.body.querySelector('[data-testid="new-group-input"]') as HTMLInputElement;
+            input.value = 'New Group';
+            input.dispatchEvent(new Event('input'));
+            await fixture.whenStable();
+
+            const add = document.body.querySelector('[data-testid="new-group-create"]') as HTMLElement;
+            add.click();
+            await fixture.whenStable();
+
+            expect(mockGroupService.createGroup).toHaveBeenCalledWith('New Group');
+            const select = document.body.querySelector('[data-testid="group-select"]') as HTMLSelectElement;
+            expect(select.value).toBe('3');
+        });
+
+        it('includes groupId in the create payload when a Group is selected', async () => {
+            const select = document.body.querySelector('[data-testid="group-select"]') as HTMLSelectElement;
+            select.value = '1';
+            select.dispatchEvent(new Event('change'));
+            await fixture.whenStable();
+
+            fillValidTitle();
+            fillValidLongUrl();
+
+            const form = document.body.querySelector('form')!;
+            form.dispatchEvent(new Event('submit'));
+            await fixture.whenStable();
+
+            const payload: CreateLinkRequest = mockLinkService.createLink.mock.calls[0][0];
+            expect(payload.groupId).toBe(1);
+        });
+    });
+
     // ─── Edit mode ──────────────────────────────────────────────
 
     describe('edit mode', () => {
@@ -401,6 +488,14 @@ describe('LinkFormModal', () => {
             const texts = Array.from(chips).map((c) => c.textContent?.trim());
             expect(texts).toContain('Work');
             expect(texts).toContain('Important');
+        });
+
+        it('pre-fills the Group from the link', async () => {
+            openEditDialog();
+            await fixture.whenStable();
+
+            const select = document.body.querySelector('[data-testid="group-select"]') as HTMLSelectElement;
+            expect(select.value).toBe('1');
         });
 
         it('has Save Changes button (not Create Link)', async () => {

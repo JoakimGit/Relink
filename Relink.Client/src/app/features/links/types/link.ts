@@ -3,6 +3,11 @@ export type Tag = {
     name: string;
 };
 
+export type Group = {
+    id: number;
+    name: string;
+};
+
 export type LinkMetadata = {
     id: number;
     shortenedLinkId: string;
@@ -28,6 +33,8 @@ export type Link = {
 
     tags?: Array<Tag>;
     metadata?: LinkMetadata | null;
+    group?: Group | null;
+    groupId?: number | null;
 };
 
 export type CreateLinkRequest = {
@@ -40,6 +47,7 @@ export type CreateLinkRequest = {
     password?: string;
     maxVisits?: number;
     tags?: string[];
+    groupId?: number;
 };
 
 export type CreateLinkResponse = {
@@ -57,6 +65,7 @@ export type UpdateLinkRequest = {
     password?: string | null;
     maxVisits?: number | null;
     tags?: string[];
+    groupId?: number;
 };
 
 export type ScrapeMetadataResponse = Pick<LinkMetadata, 'title' | 'description' | 'imageUrl' | 'siteName'> & { lastScrapedAt: string };

@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, output, signal, effect } from "@angular/core";
-import { DatePipe } from "@angular/common";
+import { DatePipe, NgClass } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Button } from "../../../shared/components/ui/button/button";
 import { Dialog } from "../../../shared/components/ui/dialog/dialog";
@@ -23,6 +23,7 @@ import {
     lucideGlobe,
 } from "@ng-icons/lucide";
 import { LinkService } from "../services/link-service";
+import { GroupService } from "../services/group-service";
 import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
 
 @Component({
@@ -45,6 +46,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
         Textarea,
         Badge,
         NgIcon,
+        NgClass
     ],
     viewProviders: [
         provideIcons({
@@ -71,14 +73,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
 
             <app-dialog-content *appDialogPortal="let ctx" class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <app-dialog-header>
-                    <h3 appDialogTitle>{{ isEditMode() ? 'Edit Link' : 'Create Link' }}</h3>
-                    <p appDialogDescription>
-                        @if (isEditMode()) {
-                            Update the details for <span class="font-mono text-foreground">{{ editLinkId() }}</span>.
-                        } @else {
-                            Fill in the details for your new shortened link. Title and Long URL are required.
-                        }
-                    </p>
+                    <h3 appDialogTitle class="text-lg mb-3">{{ isEditMode() ? 'Edit Link' : 'Create Link' }}</h3>                    
                 </app-dialog-header>
 
                 <form class="flex flex-col gap-4" (submit)="onSubmit($event)">
@@ -267,6 +262,74 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                         }
                     </div>
 
+                    <!-- Group -->
+                    <div class="flex flex-col gap-1.5">
+                        <label appLabel for="linkForm-group">Group</label>
+                        <div class="flex items-center gap-2">
+                            <select
+                                id="linkForm-group"
+                                name="group"
+                                data-testid="group-select"
+                                class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                [ngModel]="groupId()"
+                                (ngModelChange)="groupId.set($event)"
+                            >
+                                @if (!isEditMode() || !link()?.group) {
+                                    <option value="">Uncategorized</option>
+                                }
+                                @for (group of groups(); track group.id) {
+                                    <option [value]="group.id.toString()">{{ group.name }}</option>
+                                }
+                            </select>
+                            <button
+                                appBtn
+                                variant="outline"
+                                type="button"
+                                data-testid="new-group-toggle"
+                                class="shrink-0"
+                                (click)="toggleGroupCreation()"
+                            >
+                                <ng-icon name="lucidePlus" class="text-sm" />
+                                New
+                            </button>
+                        </div>
+                        @if (showGroupCreation()) {
+                            <div class="flex items-center gap-2">
+                                <input
+                                    appInput
+                                    data-testid="new-group-input"
+                                    name="newGroupName"
+                                    type="text"
+                                    aria-label="New Group name"
+                                    placeholder="New Group name"
+                                    [ngModel]="newGroupName()"
+                                    (ngModelChange)="newGroupName.set($event)"
+                                    (keydown.enter)="onNewGroupEnter($event)"
+                                />
+                                <button
+                                    appBtn
+                                    size="sm"
+                                    type="button"
+                                    data-testid="new-group-create"
+                                    [disabled]="isCreatingGroup() || !newGroupName().trim()"
+                                    (click)="createGroup()"
+                                >
+                                    Add
+                                </button>
+                                <button
+                                    appBtn
+                                    variant="ghost"
+                                    size="sm"
+                                    type="button"
+                                    data-testid="new-group-cancel"
+                                    (click)="toggleGroupCreation()"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        }
+                    </div>
+
                     <!-- Metadata (read-only, edit mode only) -->
                     @if (isEditMode() && link()?.metadata?.title) {
                         <div data-testid="metadata-section" class="rounded-lg border border-border bg-muted/30 p-4">
@@ -331,6 +394,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
 })
 export class LinkFormModal {
     private readonly linkService = inject(LinkService);
+    private readonly groupService = inject(GroupService);
 
     // ─── Mode ───────────────────────────────────────────────────
     /** When set, the modal operates in edit mode. When null, it's create mode. */
@@ -360,6 +424,12 @@ export class LinkFormModal {
     readonly maxVisits = signal("");
     readonly tagInput = signal("");
     readonly selectedTags = signal<string[]>([]);
+    readonly groupId = signal("");
+    readonly newGroupName = signal("");
+
+    // ─── Group state ───────────────────────────────────────────
+    readonly showGroupCreation = signal(false);
+    readonly isCreatingGroup = signal(false);
 
     // ─── Tag autocomplete state ─────────────────────────────────
     readonly tagInputFocused = signal(false);
@@ -421,6 +491,11 @@ export class LinkFormModal {
         );
     });
 
+    // ─── Group suggestions ──────────────────────────────────────
+    readonly groupsResource = this.groupService.groupsResource;
+
+    readonly groups = computed(() => this.groupsResource.value() ?? []);
+
     constructor() {
         // Watch for link input changes to pre-fill the form in edit mode
         effect(() => {
@@ -442,6 +517,7 @@ export class LinkFormModal {
         this.password.set("");
         this.maxVisits.set(linkData.maxVisits?.toString() ?? "");
         this.selectedTags.set(linkData.tags?.map((t) => t.name) ?? []);
+        this.groupId.set(linkData.group?.id?.toString() ?? "");
         this.submitError.set(null);
         this.isSubmitting.set(false);
         this.titleTouched.set(false);
@@ -464,6 +540,10 @@ export class LinkFormModal {
         this.maxVisits.set("");
         this.tagInput.set("");
         this.selectedTags.set([]);
+        this.groupId.set("");
+        this.newGroupName.set("");
+        this.showGroupCreation.set(false);
+        this.isCreatingGroup.set(false);
         this.submitError.set(null);
         this.isSubmitting.set(false);
         this.titleTouched.set(false);
@@ -513,6 +593,41 @@ export class LinkFormModal {
 
     onTagBlur() {
         setTimeout(() => this.tagInputFocused.set(false), 150);
+    }
+
+    // ─── Group actions ──────────────────────────────────────────
+    toggleGroupCreation() {
+        this.showGroupCreation.update((v) => !v);
+        if (this.showGroupCreation()) {
+            this.newGroupName.set("");
+        }
+    }
+
+    onNewGroupEnter(event: Event) {
+        event.preventDefault();
+        this.createGroup();
+    }
+
+    createGroup() {
+        const name = this.newGroupName().trim();
+        if (!name || this.isCreatingGroup()) return;
+
+        this.isCreatingGroup.set(true);
+        this.submitError.set(null);
+
+        this.groupService.createGroup(name).subscribe({
+            next: (group) => {
+                this.groupsResource.reload();
+                this.groupId.set(group.id.toString());
+                this.newGroupName.set("");
+                this.showGroupCreation.set(false);
+                this.isCreatingGroup.set(false);
+            },
+            error: () => {
+                this.submitError.set("Failed to create group. Please try again.");
+                this.isCreatingGroup.set(false);
+            },
+        });
     }
 
     onMetadataImageError(event: Event) {
@@ -571,6 +686,9 @@ export class LinkFormModal {
 
         const tags = this.selectedTags();
         if (tags.length > 0) (request as Record<string, unknown>)['tags'] = tags;
+
+        const groupIdVal = this.groupId();
+        if (groupIdVal !== '') (request as Record<string, unknown>)['groupId'] = parseInt(groupIdVal, 10);
 
         return request;
     }
