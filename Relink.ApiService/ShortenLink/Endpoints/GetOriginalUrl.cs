@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Relink.ApiService.ShortenLink.Endpoints;
@@ -6,12 +7,14 @@ public class GetOriginalUrl : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) => app
         .MapGet("/{shortcode:regex(^[a-zA-Z0-9]+$)}", Handle)
-        .WithSummary("Gets the longUrl of a link to redirect to");
+        .WithSummary("Redirects to the Long URL, or serves an Open Graph preview page to crawlers");
 
-    public static async Task<Results<NotFound, ProblemHttpResult, RedirectHttpResult>> Handle(
+    public static async Task<Results<NotFound, ProblemHttpResult, RedirectHttpResult, ContentHttpResult>> Handle(
         string shortcode,
         AppDbContext db,
         HybridCache hybridCache,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration,
         [FromServices] IHttpContextAccessor httpContext,
         CancellationToken ct)
     {
@@ -21,59 +24,57 @@ public class GetOriginalUrl : IEndpoint
         if (link is null)
             return TypedResults.NotFound();
 
-        // Constraint checks in priority order
-        var clientBaseUrl = (httpContext.HttpContext?.RequestServices
-            .GetRequiredService<IConfiguration>()
-            .GetValue<string>("ClientBaseUrl")) ?? string.Empty;
-        var constraintResult = CheckConstraints(link, clientBaseUrl);
-        if (constraintResult is not null)
-        {
-            if (constraintResult is ProblemHttpResult problem)
-                return problem;
-            if (constraintResult is RedirectHttpResult redirect)
-                return redirect;
-        }
-
-        // No constraint blocked — record visit and redirect
-        var redirectUrl = link.LongUrl;
-        if (redirectUrl is not null)
-        {
-            await RecordVisit(link, db, httpContext, ct);
-            return TypedResults.Redirect(redirectUrl);
-        }
-
-        return TypedResults.NotFound();
-    }
-
-    private static object? CheckConstraints(Link link, string clientBaseUrl)
-    {
-        // 1. Lock — manual disable
+        // Constraint checks that apply to everyone: Lock and Password Lock.
         if (link.IsLocked)
             return TypedResults.Problem(
                 detail: "This link has been disabled.",
                 statusCode: StatusCodes.Status410Gone);
 
-        // 2. Start Date — not yet available
+        var clientBaseUrl = configuration.GetValue<string>("ClientBaseUrl") ?? string.Empty;
+
+        if (!string.IsNullOrEmpty(link.PasswordHash))
+            return TypedResults.Redirect($"{clientBaseUrl}/unlock/{link.Id}");
+
+        // Crawlers receive an Open Graph preview page. Time-based constraints and
+        // Max Visits do not suppress the preview, so only humans check those below.
+        var userAgent = httpContext.HttpContext?.Request.Headers.UserAgent.ToString();
+        if (CrawlerDetector.IsCrawler(userAgent))
+        {
+            var metadata = await LinkPreview.GetOrCreateMetadataAsync(link, db, httpClientFactory, ct);
+            return TypedResults.Content(LinkPreview.BuildHtml(link, metadata), "text/html", Encoding.UTF8);
+        }
+
+        // Remaining constraints for humans: Start Date, Expiration Date, Max Visits.
+        var constraintResult = CheckConstraints(link);
+        if (constraintResult is not null)
+            return constraintResult;
+
+        if (string.IsNullOrEmpty(link.LongUrl))
+            return TypedResults.NotFound();
+
+        await RecordVisit(link, db, httpContext, ct);
+        return TypedResults.Redirect(link.LongUrl);
+    }
+
+    private static ProblemHttpResult? CheckConstraints(Link link)
+    {
+        // Start Date — not yet available
         if (link.StartDate.HasValue && DateTime.UtcNow < link.StartDate.Value)
             return TypedResults.Problem(
                 detail: $"This link is not yet available. It becomes available on {link.StartDate.Value:yyyy-MM-dd}.",
                 statusCode: StatusCodes.Status403Forbidden);
 
-        // 3. Expiration Date — expired
+        // Expiration Date — expired
         if (link.ExpirationDate.HasValue && DateTime.UtcNow > link.ExpirationDate.Value)
             return TypedResults.Problem(
                 detail: $"This link has expired on {link.ExpirationDate.Value:yyyy-MM-dd}.",
                 statusCode: StatusCodes.Status410Gone);
 
-        // 4. Max Visits — limit reached
+        // Max Visits — limit reached
         if (link.MaxVisits.HasValue && link.VisitCount >= link.MaxVisits.Value)
             return TypedResults.Problem(
                 detail: $"This link has reached its visit limit of {link.MaxVisits.Value}.",
                 statusCode: StatusCodes.Status403Forbidden);
-
-        // 5. Password Lock — redirect to Angular unlock page
-        if (!string.IsNullOrEmpty(link.PasswordHash))
-            return TypedResults.Redirect($"{clientBaseUrl}/unlock/{link.Id}");
 
         return null;
     }

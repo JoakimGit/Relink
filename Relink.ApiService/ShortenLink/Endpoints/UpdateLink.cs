@@ -8,6 +8,7 @@ public class UpdateLink : IEndpoint
         .WithRequestValidation<Request>();
 
     public record Request(
+        string LongUrl,
         string Title,
         string? Notes,
         DateTime? StartDate,
@@ -23,6 +24,7 @@ public class UpdateLink : IEndpoint
     {
         public RequestValidator()
         {
+            RuleFor(x => x.LongUrl).NotEmpty();
             RuleFor(x => x.Title).NotEmpty().MaximumLength(60);
             RuleFor(x => x.GroupId).GreaterThan(0);
         }
@@ -35,8 +37,22 @@ public class UpdateLink : IEndpoint
         HybridCache hybridCache,
         CancellationToken ct)
     {
-        var link = await db.Links.Include(l => l.Tags).Include(l => l.Group).SingleOrDefaultAsync(x => x.Id == id, ct);
+        var link = await db.Links
+            .Include(l => l.Tags)
+            .Include(l => l.Group)
+            .Include(l => l.Metadata)
+            .SingleOrDefaultAsync(x => x.Id == id, ct);
         if (link == null) return TypedResults.NotFound();
+
+        if (request.LongUrl != link.LongUrl)
+        {
+            link.LongUrl = request.LongUrl;
+            if (link.Metadata is not null)
+            {
+                db.LinkMetadata.Remove(link.Metadata);
+                link.Metadata = null;
+            }
+        }
 
         link.Title = request.Title;
         link.Notes = request.Notes;

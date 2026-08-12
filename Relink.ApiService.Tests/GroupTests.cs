@@ -182,6 +182,7 @@ public class GroupTests : IClassFixture<CustomWebApplicationFactory>
         var response = await client.PatchAsJsonAsync($"/api/links/{shortCode}", new
         {
             title = "Grouped",
+            longUrl = "https://example.com/update",
             groupId = group.Id
         });
 
@@ -200,7 +201,7 @@ public class GroupTests : IClassFixture<CustomWebApplicationFactory>
         await SeedLink(new Link { Id = "groupkeep1", Title = "Before", LongUrl = "https://example.com/keep", GroupId = group.Id });
         var client = CreateClient();
 
-        var response = await client.PatchAsJsonAsync("/api/links/groupkeep1", new { title = "After" });
+        var response = await client.PatchAsJsonAsync("/api/links/groupkeep1", new { title = "After", longUrl = "https://example.com/keep" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

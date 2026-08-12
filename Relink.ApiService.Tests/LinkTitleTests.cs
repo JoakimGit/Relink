@@ -95,7 +95,7 @@ public class LinkTitleTests : IClassFixture<CustomWebApplicationFactory>
         });
 
         var client = CreateClient();
-        var body = new { title = "New Title" };
+        var body = new { title = "New Title", longUrl = "https://example.com/update" };
 
         var response = await client.PatchAsJsonAsync($"/api/links/{shortCode}", body);
 
@@ -119,7 +119,7 @@ public class LinkTitleTests : IClassFixture<CustomWebApplicationFactory>
         });
 
         var client = CreateClient();
-        var body = new { title = "" };
+        var body = new { title = "", longUrl = "https://example.com/update" };
 
         var response = await client.PatchAsJsonAsync($"/api/links/{shortCode}", body);
 

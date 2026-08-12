@@ -24,7 +24,6 @@ public static class Endpoints
         endpoints.MapEndpoint<UpdateLink>();
         endpoints.MapEndpoint<DeleteLink>();
         endpoints.MapEndpoint<UnlockLink>();
-        endpoints.MapEndpoint<ScrapeMetadata>();
         endpoints.MapEndpoint<GetLinkAnalytics>();
         endpoints.MapEndpoint<ResetVisitCount>();
     }

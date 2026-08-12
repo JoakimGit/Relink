@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -73,5 +74,52 @@ public class MockHttpClientFactory : IHttpClientFactory
     public HttpClient CreateClient(string name)
     {
         return new HttpClient(_handler) { BaseAddress = null };
+    }
+}
+
+/// <summary>
+/// A test double for HttpMessageHandler that returns a predefined response.
+/// </summary>
+public class FakeHttpMessageHandler : HttpMessageHandler
+{
+    private readonly Func<HttpResponseMessage> _responseFactory;
+
+    public FakeHttpMessageHandler(HttpStatusCode statusCode, string content)
+        : this(() => new HttpResponseMessage(statusCode)
+        {
+            Content = new StringContent(content)
+        })
+    {
+    }
+
+    public FakeHttpMessageHandler(Func<HttpResponseMessage> responseFactory)
+    {
+        _responseFactory = responseFactory;
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(_responseFactory());
+    }
+}
+
+/// <summary>
+/// A test double for HttpMessageHandler that counts how many requests it serves.
+/// </summary>
+public class CountingHttpMessageHandler : HttpMessageHandler
+{
+    private readonly Func<HttpResponseMessage> _responseFactory;
+
+    public int RequestCount { get; private set; }
+
+    public CountingHttpMessageHandler(Func<HttpResponseMessage> responseFactory)
+    {
+        _responseFactory = responseFactory;
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        RequestCount++;
+        return Task.FromResult(_responseFactory());
     }
 }
