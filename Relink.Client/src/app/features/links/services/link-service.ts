@@ -1,7 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Link, CreateLinkRequest, CreateLinkResponse, UpdateLinkRequest, UnlockResponse, Tag, ScrapeMetadataResponse, AnalyticsResponse } from '../types/link';
+import { Link, CreateLinkRequest, CreateLinkResponse, UpdateLinkRequest, UnlockResponse, Tag, AnalyticsResponse } from '../types/link';
 
 @Service()
 export class LinkService {
@@ -27,10 +27,6 @@ export class LinkService {
 
     unlockLink(shortcode: string, password: string) {
         return this.http.post<UnlockResponse>(`${this.apiUrl}/links/${shortcode}/unlock`, { password });
-    }
-
-    scrapeMetadata(id: string) {
-        return this.http.post<ScrapeMetadataResponse>(`${this.apiUrl}/links/${id}/scrape-metadata`, null);
     }
 
     getAnalytics(id: string) {

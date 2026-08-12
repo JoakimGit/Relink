@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
-import { of } from 'rxjs';
 import { LinkCard } from './link-card';
 import { LinkService } from '../services/link-service';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -53,9 +52,6 @@ const plainLink: Link = {
 function createMockLinkService() {
     return {
         redirectBaseUrl: 'https://localhost:7445',
-        scrapeMetadata: vi.fn().mockReturnValue(
-            of({ title: 'Test', description: null, imageUrl: null, siteName: null, lastScrapedAt: '' }),
-        ),
     };
 }
 
@@ -127,6 +123,22 @@ describe('LinkCard', () => {
 
         const favicon = nativeElement.querySelector('[data-testid="favicon"]');
         expect(favicon).toBeFalsy();
+    });
+
+    it('renders a globe indicator when Link Metadata exists', async () => {
+        setUp();
+        await fixture.whenStable();
+
+        const globe = nativeElement.querySelector('[data-testid="globe-indicator"]');
+        expect(globe).toBeTruthy();
+    });
+
+    it('does not render a globe indicator when Link Metadata is missing', async () => {
+        setUp(plainLink);
+        await fixture.whenStable();
+
+        const globe = nativeElement.querySelector('[data-testid="globe-indicator"]');
+        expect(globe).toBeFalsy();
     });
 
     it('renders the Visit Count', async () => {

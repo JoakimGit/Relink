@@ -88,7 +88,6 @@ import type { Link } from "../types/link";
                                 (editRequested)="openEditModal($event)"
                                 (deleteRequested)="openDeleteConfirm($event)"
                                 (analyticsRequested)="openAnalyticsModal($event)"
-                                (metadataScraped)="linksResource.reload()"
                             />
                         }
                     </div>
@@ -223,31 +222,31 @@ export class HomePage {
         }
     }
 
-    openEditModal(link: Link): void {
+    openEditModal(link: Link) {
         // Clear first so re-selecting the same link re-triggers the effect
         this.linkToEdit.set(null);
         setTimeout(() => this.linkToEdit.set(link));
     }
 
-    onEditModalClosed(): void {
+    onEditModalClosed() {
         this.linkToEdit.set(null);
     }
 
-    openDeleteConfirm(link: Link): void {
+    openDeleteConfirm(link: Link) {
         this.linkToDelete.set(link);
         this.deleteConfirmDialog().open();
     }
 
-    openAnalyticsModal(link: Link): void {
+    openAnalyticsModal(link: Link) {
         this.analyticsModal().open(link);
     }
 
-    onVisitCountReset(): void {
+    onVisitCountReset() {
         // Refresh the grid so each card's Visit Count reflects the reset.
         this.linksResource.reload();
     }
 
-    onDeleteConfirmed(): void {
+    onDeleteConfirmed() {
         const link = this.linkToDelete();
         if (!link) return;
 
@@ -266,7 +265,7 @@ export class HomePage {
         });
     }
 
-    onGroupsChanged(): void {
+    onGroupsChanged() {
         // A renamed or deleted Group can invalidate the current selection;
         // fall back to All Links so the grid never strands on a stale pill.
         this.selectedPill.set('all');

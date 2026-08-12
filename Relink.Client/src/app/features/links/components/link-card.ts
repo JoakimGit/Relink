@@ -6,6 +6,7 @@ import {
     lucideCalendar,
     lucideKey,
     lucideEye,
+    lucideGlobe,
 } from '@ng-icons/lucide';
 import { LinkCardActions } from './link-card-actions';
 import { domainOf, faviconUrlFor } from '../../../shared/utils/url';
@@ -20,6 +21,7 @@ import type { Link } from '../types/link';
             lucideCalendar,
             lucideKey,
             lucideEye,
+            lucideGlobe,
         }),
     ],
     template: `
@@ -46,13 +48,23 @@ import type { Link } from '../types/link';
                     >
                         {{ link().title }}
                     </h3>
+                    @if (link().metadata) {
+                        <span
+                            data-testid="globe-indicator"
+                            role="img"
+                            aria-label="Rich preview available"
+                            class="flex items-center justify-center shrink-0 text-muted-foreground"
+                            title="Rich preview available"
+                        >
+                            <ng-icon name="lucideGlobe" class="text-xs" />
+                        </span>
+                    }
                 </div>
                 <app-link-card-actions
                     [link]="link()"
                     (editRequested)="editRequested.emit($event)"
                     (deleteRequested)="deleteRequested.emit($event)"
                     (analyticsRequested)="analyticsRequested.emit($event)"
-                    (metadataScraped)="metadataScraped.emit($event)"
                 />
             </div>
 
@@ -115,7 +127,6 @@ export class LinkCard {
     readonly editRequested = output<Link>();
     readonly deleteRequested = output<Link>();
     readonly analyticsRequested = output<Link>();
-    readonly metadataScraped = output<string>();
 
     readonly domain = computed(() => domainOf(this.link().longUrl));
 

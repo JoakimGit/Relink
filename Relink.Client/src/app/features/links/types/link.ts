@@ -68,8 +68,6 @@ export type UpdateLinkRequest = {
     groupId?: number;
 };
 
-export type ScrapeMetadataResponse = Pick<LinkMetadata, 'title' | 'description' | 'imageUrl' | 'siteName'> & { lastScrapedAt: string };
-
 export type VisitBucket = {
     start: string;
     end: string;

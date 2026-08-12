@@ -5,8 +5,6 @@ import {
     lucidePencil,
     lucideTrash2,
     lucideCopy,
-    lucideGlobe,
-    lucideLoader,
     lucideChartColumn,
 } from '@ng-icons/lucide';
 import { Button } from '../../../shared/components/ui/button/button';
@@ -27,8 +25,6 @@ import type { Link } from '../types/link';
             lucidePencil,
             lucideTrash2,
             lucideCopy,
-            lucideGlobe,
-            lucideLoader,
             lucideChartColumn,
         }),
     ],
@@ -77,19 +73,6 @@ import type { Link } from '../types/link';
                         Analytics
                     </button>
                     <button
-                        data-testid="action-scrape"
-                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        [disabled]="isScraping()"
-                        (click)="onScrape()"
-                    >
-                        @if (isScraping()) {
-                            <ng-icon name="lucideLoader" class="text-xs animate-spin" />
-                        } @else {
-                            <ng-icon name="lucideGlobe" class="text-xs" />
-                        }
-                        {{ isScraping() ? 'Scraping...' : 'Scrape Metadata' }}
-                    </button>
-                    <button
                         data-testid="action-delete"
                         class="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
                         (click)="onDelete()"
@@ -107,36 +90,34 @@ export class LinkCardActions {
     readonly editRequested = output<Link>();
     readonly deleteRequested = output<Link>();
     readonly analyticsRequested = output<Link>();
-    readonly metadataScraped = output<string>();
 
     private readonly toastService = inject(ToastService);
     private readonly linkService = inject(LinkService);
     private readonly elementRef = inject(ElementRef);
 
     readonly isOpen = signal(false);
-    readonly isScraping = signal(false);
 
-    toggleMenu(): void {
+    toggleMenu() {
         this.isOpen.update((v) => !v);
     }
 
-    closeMenu(): void {
+    closeMenu() {
         this.isOpen.set(false);
     }
 
-    onDocumentClick(event: MouseEvent): void {
+    onDocumentClick(event: MouseEvent) {
         if (!this.elementRef.nativeElement.contains(event.target)) {
             this.closeMenu();
         }
     }
 
-    onDocumentKeydown(event: KeyboardEvent): void {
+    onDocumentKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             this.closeMenu();
         }
     }
 
-    onCopy(): void {
+    onCopy() {
         const shortUrl = `${this.linkService.redirectBaseUrl}/${this.link().id}`;
         navigator.clipboard.writeText(shortUrl).then(() => {
             this.toastService.show('Copied!');
@@ -147,34 +128,17 @@ export class LinkCardActions {
         this.closeMenu();
     }
 
-    onEdit(): void {
+    onEdit() {
         this.editRequested.emit(this.link());
         this.closeMenu();
     }
 
-    onAnalytics(): void {
+    onAnalytics() {
         this.analyticsRequested.emit(this.link());
         this.closeMenu();
     }
 
-    onScrape(): void {
-        this.isScraping.set(true);
-        this.linkService.scrapeMetadata(this.link().id).subscribe({
-            next: () => {
-                this.toastService.show('Metadata scraped!');
-                this.isScraping.set(false);
-                this.metadataScraped.emit(this.link().id);
-                this.closeMenu();
-            },
-            error: () => {
-                this.toastService.show('Failed to scrape metadata.');
-                this.isScraping.set(false);
-                this.closeMenu();
-            },
-        });
-    }
-
-    onDelete(): void {
+    onDelete() {
         this.deleteRequested.emit(this.link());
         this.closeMenu();
     }
