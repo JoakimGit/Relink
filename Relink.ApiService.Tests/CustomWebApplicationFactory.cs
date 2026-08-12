@@ -9,6 +9,10 @@ namespace Relink.ApiService.Tests;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
+    // Unique per factory instance: scopes within one factory share a store,
+    // while parallel test classes get isolated stores.
+    private readonly string _databaseName = $"TestDb-{Guid.NewGuid()}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -27,8 +31,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             foreach (var d in toRemove)
                 services.Remove(d);
 
-            // Use a fixed database name for sharing between scopes
-            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("TestDb"));
+            // Use a fixed database name so the SUT and test scopes share one store.
+            services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_databaseName));
 
             // Remove Worker that tries to run EF migrations
             var worker = services.FirstOrDefault(d => d.ImplementationType == typeof(Worker));

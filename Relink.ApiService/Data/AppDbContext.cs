@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Link>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(60);
             entity.Property(e => e.LongUrl).IsRequired().HasMaxLength(2048);
 
             entity.HasOne(e => e.Metadata)

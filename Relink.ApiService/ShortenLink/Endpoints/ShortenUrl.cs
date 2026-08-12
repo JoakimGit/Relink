@@ -9,22 +9,23 @@ public class ShortenUrl : IEndpoint
 
     public record Request(
         string LongUrl,
+        string Title,
         string? PreferedShortCode,
         string? Notes,
-        string? FallbackUrl,
         DateTime? StartDate,
         DateTime? ExpirationDate,
         string? Password,
         int? MaxVisits,
         string[]? Tags
     );
-    public record Response(string ShortCode);
+    public record Response(string ShortCode, string Title);
 
     public class RequestValidator : AbstractValidator<Request>
     {
         public RequestValidator()
         {
             RuleFor(x => x.LongUrl).NotEmpty();
+            RuleFor(x => x.Title).NotEmpty().MaximumLength(60);
         }
     }
 
@@ -45,9 +46,9 @@ public class ShortenUrl : IEndpoint
                 var link = new Link
                 {
                     Id = shortcode,
+                    Title = request.Title,
                     LongUrl = request.LongUrl,
                     Notes = request.Notes,
-                    FallbackUrl = request.FallbackUrl,
                     StartDate = request.StartDate,
                     ExpirationDate = request.ExpirationDate,
                     PasswordHash = request.Password != null ? PasswordHasher.CalculatePasswordHash(request.Password, shortcode) : null,
@@ -66,7 +67,7 @@ public class ShortenUrl : IEndpoint
 
                 await db.Links.AddAsync(link, ct);
                 await db.SaveChangesAsync(ct);
-                var response = new Response(link.Id);
+                var response = new Response(link.Id, link.Title);
 
                 await hybridCache.SetAsync(shortcode, link, cancellationToken: CancellationToken.None);
                 return TypedResults.Ok(response);

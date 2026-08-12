@@ -4,11 +4,12 @@ public class UpdateLink : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder app) => app
         .MapPatch("/{id}", Handle)
-        .WithSummary("Updates a shortened Link");
+        .WithSummary("Updates a shortened Link")
+        .WithRequestValidation<Request>();
 
     public record Request(
+        string Title,
         string? Notes,
-        string? FallbackUrl,
         DateTime? StartDate,
         DateTime? ExpirationDate,
         string? Password,
@@ -16,6 +17,14 @@ public class UpdateLink : IEndpoint
         string[]? Tags
     );
     public record Response(Link Link);
+
+    public class RequestValidator : AbstractValidator<Request>
+    {
+        public RequestValidator()
+        {
+            RuleFor(x => x.Title).NotEmpty().MaximumLength(60);
+        }
+    }
 
     private static async Task<Results<Ok<Response>, NotFound>> Handle(
         string id,
@@ -27,8 +36,8 @@ public class UpdateLink : IEndpoint
         var link = await db.Links.Include(l => l.Tags).SingleOrDefaultAsync(x => x.Id == id, ct);
         if (link == null) return TypedResults.NotFound();
 
+        link.Title = request.Title;
         link.Notes = request.Notes;
-        link.FallbackUrl = request.FallbackUrl;
         link.StartDate = request.StartDate;
         link.ExpirationDate = request.ExpirationDate;
 

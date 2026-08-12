@@ -35,7 +35,7 @@ public class GetOriginalUrl : IEndpoint
         }
 
         // No constraint blocked — record visit and redirect
-        var redirectUrl = link.LongUrl ?? link.FallbackUrl;
+        var redirectUrl = link.LongUrl;
         if (redirectUrl is not null)
         {
             await RecordVisit(link, db, httpContext, ct);

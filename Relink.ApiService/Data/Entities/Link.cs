@@ -3,10 +3,10 @@ namespace Relink.ApiService.Data.Entities;
 public class Link
 {
     public required string Id { get; set; }
+    public required string Title { get; set; }
     public string LongUrl { get; set; } = string.Empty;
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public string? FallbackUrl { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? ExpirationDate { get; set; }
     public string? PasswordHash { get; set; }

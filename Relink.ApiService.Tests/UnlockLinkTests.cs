@@ -38,6 +38,7 @@ public class UnlockLinkTests : IClassFixture<CustomWebApplicationFactory>
         await SeedLink(new Link
         {
             Id = shortCode,
+            Title = "Protected",
             LongUrl = "https://example.com/protected",
             PasswordHash = passwordHash
         });
@@ -65,6 +66,7 @@ public class UnlockLinkTests : IClassFixture<CustomWebApplicationFactory>
         await SeedLink(new Link
         {
             Id = shortCode,
+            Title = "Protected",
             LongUrl = "https://example.com/protected",
             PasswordHash = passwordHash
         });
@@ -103,6 +105,7 @@ public class UnlockLinkTests : IClassFixture<CustomWebApplicationFactory>
         await SeedLink(new Link
         {
             Id = shortCode,
+            Title = "Protected",
             LongUrl = "https://example.com/protected",
             PasswordHash = passwordHash
         });

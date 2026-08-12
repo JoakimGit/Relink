@@ -27,9 +27,9 @@ public class UnlockLink : IEndpoint
                 detail: "Incorrect password.",
                 statusCode: StatusCodes.Status403Forbidden);
 
-        return TypedResults.Ok(new UnlockResponse(link.LongUrl, link.FallbackUrl));
+        return TypedResults.Ok(new UnlockResponse(link.LongUrl));
     }
 }
 
 public record UnlockRequest(string Password);
-public record UnlockResponse(string LongUrl, string? FallbackUrl);
+public record UnlockResponse(string LongUrl);

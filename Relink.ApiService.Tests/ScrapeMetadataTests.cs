@@ -79,6 +79,7 @@ public class ScrapeMetadataTests : IClassFixture<CustomWebApplicationFactory>, I
         await SeedLink(new Link
         {
             Id = shortCode,
+            Title = "Scrape",
             LongUrl = "https://example.com/article",
         });
 
@@ -115,6 +116,7 @@ public class ScrapeMetadataTests : IClassFixture<CustomWebApplicationFactory>, I
         await SeedLink(new Link
         {
             Id = shortCode,
+            Title = "Scrape Update",
             LongUrl = "https://example.com/updated",
         });
 
@@ -165,6 +167,7 @@ public class ScrapeMetadataTests : IClassFixture<CustomWebApplicationFactory>, I
         await SeedLink(new Link
         {
             Id = shortCode,
+            Title = "Unreachable",
             LongUrl = "https://unreachable.example.com",
         });
 
@@ -192,6 +195,7 @@ public class ScrapeMetadataTests : IClassFixture<CustomWebApplicationFactory>, I
         await SeedLink(new Link
         {
             Id = shortCode,
+            Title = "No OG",
             LongUrl = "https://example.com/no-og",
         });
 
