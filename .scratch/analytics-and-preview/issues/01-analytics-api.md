@@ -6,7 +6,12 @@
 
 **Status:** ready-for-agent
 
-- [ ] The analytics endpoint returns visit counts bucketed hourly for the last 48 hours and daily before that
-- [ ] The analytics endpoint returns top referrers with counts
-- [ ] The analytics endpoint returns a browser breakdown
-- [ ] The reset endpoint sets Visit Count to zero and persists it
+- [x] The analytics endpoint returns visit counts bucketed hourly for the last 48 hours and daily before that
+- [x] The analytics endpoint returns top referrers with counts
+- [x] The analytics endpoint returns a browser breakdown
+- [x] The reset endpoint sets Visit Count to zero and persists it
+
+## Comments
+
+- Implemented `GET /api/links/{id}/analytics` and `POST /api/links/{id}/reset-visit-count` (in `Relink.ApiService/Analytics/`).
+- Added 7 integration tests in `Relink.ApiService.Tests/AnalyticsTests.cs`; full suite passes (45 tests, 0 failures).

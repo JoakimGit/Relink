@@ -25,6 +25,8 @@ public static class Endpoints
         endpoints.MapEndpoint<DeleteLink>();
         endpoints.MapEndpoint<UnlockLink>();
         endpoints.MapEndpoint<ScrapeMetadata>();
+        endpoints.MapEndpoint<GetLinkAnalytics>();
+        endpoints.MapEndpoint<ResetVisitCount>();
     }
 
     private static void MapTagEndpoints(this IEndpointRouteBuilder app)
