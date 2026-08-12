@@ -1,4 +1,4 @@
-import { Component, inject, input, output, signal, HostListener, ElementRef } from '@angular/core';
+import { Component, inject, input, output, signal, ElementRef } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
     lucideEllipsisVertical,
@@ -16,6 +16,10 @@ import type { Link } from '../types/link';
 @Component({
     selector: 'app-link-card-actions',
     imports: [NgIcon, Button],
+    host: {
+        '(document:click)': 'onDocumentClick($event)',
+        '(document:keydown)': 'onDocumentKeydown($event)',
+    },
     viewProviders: [
         provideIcons({
             lucideEllipsisVertical,
@@ -109,9 +113,14 @@ export class LinkCardActions {
         this.isOpen.set(false);
     }
 
-    @HostListener('document:click', ['$event'])
     onDocumentClick(event: MouseEvent): void {
         if (!this.elementRef.nativeElement.contains(event.target)) {
+            this.closeMenu();
+        }
+    }
+
+    onDocumentKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Escape') {
             this.closeMenu();
         }
     }

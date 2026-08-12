@@ -285,7 +285,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                                         [src]="link()?.metadata?.imageUrl"
                                         [alt]="link()?.metadata?.title"
                                         class="w-16 h-16 rounded-md object-cover shrink-0 bg-muted"
-                                        (error)="$any($event.target).style.display = 'none'"
+                                        (error)="onMetadataImageError($event)"
                                     />
                                 }
                                 <div class="min-w-0 space-y-1">
@@ -513,6 +513,10 @@ export class LinkFormModal {
 
     onTagBlur() {
         setTimeout(() => this.tagInputFocused.set(false), 150);
+    }
+
+    onMetadataImageError(event: Event) {
+        (event.target as HTMLImageElement).style.display = 'none';
     }
 
     // ─── Submit ─────────────────────────────────────────────────

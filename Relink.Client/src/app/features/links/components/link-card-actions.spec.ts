@@ -112,6 +112,18 @@ describe('LinkCardActions', () => {
             expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeFalsy();
         });
 
+        it('closes the menu when Escape is pressed', async () => {
+            await fixture.whenStable();
+            const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
+            trigger.click();
+            await fixture.whenStable();
+            expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeTruthy();
+
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+            await fixture.whenStable();
+            expect(nativeElement.querySelector('[data-testid="card-actions-menu"]')).toBeFalsy();
+        });
+
         it('shows Copy, Edit, and Delete action buttons in the menu', async () => {
             await fixture.whenStable();
             const trigger = nativeElement.querySelector('[data-testid="card-actions-trigger"]') as HTMLElement;
