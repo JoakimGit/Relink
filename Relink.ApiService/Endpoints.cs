@@ -11,6 +11,7 @@ public static class Endpoints
 
         endpoints.MapLinkEndpoints();
         endpoints.MapTagEndpoints();
+        endpoints.MapGroupEndpoints();
     }
 
     private static void MapLinkEndpoints(this IEndpointRouteBuilder app)
@@ -35,6 +36,17 @@ public static class Endpoints
         endpoints.MapEndpoint<UpdateTag>();
         endpoints.MapEndpoint<DeleteTag>();
         endpoints.MapEndpoint<GetAllTags>();
+    }
+
+    private static void MapGroupEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup("/groups")
+            .WithTags("Groups");
+
+        endpoints.MapEndpoint<CreateGroup>();
+        endpoints.MapEndpoint<UpdateGroup>();
+        endpoints.MapEndpoint<DeleteGroup>();
+        endpoints.MapEndpoint<GetAllGroups>();
     }
 
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app) where TEndpoint : IEndpoint

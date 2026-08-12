@@ -14,7 +14,8 @@ public class UpdateLink : IEndpoint
         DateTime? ExpirationDate,
         string? Password,
         int? MaxVisits,
-        string[]? Tags
+        string[]? Tags,
+        int? GroupId
     );
     public record Response(Link Link);
 
@@ -23,17 +24,18 @@ public class UpdateLink : IEndpoint
         public RequestValidator()
         {
             RuleFor(x => x.Title).NotEmpty().MaximumLength(60);
+            RuleFor(x => x.GroupId).GreaterThan(0);
         }
     }
 
-    private static async Task<Results<Ok<Response>, NotFound>> Handle(
+    private static async Task<Results<Ok<Response>, NotFound, ProblemHttpResult>> Handle(
         string id,
         Request request,
         AppDbContext db,
         HybridCache hybridCache,
         CancellationToken ct)
     {
-        var link = await db.Links.Include(l => l.Tags).SingleOrDefaultAsync(x => x.Id == id, ct);
+        var link = await db.Links.Include(l => l.Tags).Include(l => l.Group).SingleOrDefaultAsync(x => x.Id == id, ct);
         if (link == null) return TypedResults.NotFound();
 
         link.Title = request.Title;
@@ -57,6 +59,15 @@ public class UpdateLink : IEndpoint
             {
                 link.Tags.Add(tag);
             }
+        }
+
+        if (request.GroupId.HasValue)
+        {
+            var group = await db.Groups.SingleOrDefaultAsync(g => g.Id == request.GroupId.Value, ct);
+            if (group == null)
+                return TypedResults.Problem("Group not found.", statusCode: StatusCodes.Status400BadRequest);
+
+            link.Group = group;
         }
 
         await db.SaveChangesAsync(ct);

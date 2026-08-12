@@ -16,7 +16,8 @@ public class ShortenUrl : IEndpoint
         DateTime? ExpirationDate,
         string? Password,
         int? MaxVisits,
-        string[]? Tags
+        string[]? Tags,
+        int? GroupId
     );
     public record Response(string ShortCode, string Title);
 
@@ -26,6 +27,7 @@ public class ShortenUrl : IEndpoint
         {
             RuleFor(x => x.LongUrl).NotEmpty();
             RuleFor(x => x.Title).NotEmpty().MaximumLength(60);
+            RuleFor(x => x.GroupId).GreaterThan(0);
         }
     }
 
@@ -63,6 +65,15 @@ public class ShortenUrl : IEndpoint
                 foreach (var tag in tags)
                 {
                     link.Tags.Add(tag);
+                }
+
+                if (request.GroupId.HasValue)
+                {
+                    var group = await db.Groups.SingleOrDefaultAsync(g => g.Id == request.GroupId.Value, ct);
+                    if (group == null)
+                        return TypedResults.Problem("Group not found.", statusCode: StatusCodes.Status400BadRequest);
+
+                    link.Group = group;
                 }
 
                 await db.Links.AddAsync(link, ct);
