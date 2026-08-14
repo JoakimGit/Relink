@@ -3,7 +3,9 @@ import { DatePipe } from '@angular/common';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
     lucideLock,
-    lucideCalendar,
+    lucideCalendarClock,
+    lucideCalendarX,
+    lucideGauge,
     lucideKey,
     lucideEye,
     lucideGlobe,
@@ -18,7 +20,9 @@ import type { Link } from '../types/link';
     viewProviders: [
         provideIcons({
             lucideLock,
-            lucideCalendar,
+            lucideCalendarClock,
+            lucideCalendarX,
+            lucideGauge,
             lucideKey,
             lucideEye,
             lucideGlobe,
@@ -89,15 +93,37 @@ import type { Link } from '../types/link';
                         <ng-icon name="lucideKey" class="text-xs" />
                     </span>
                 }
-                @if (link().startDate || link().expirationDate) {
-                    <span data-testid="calendar-icon" class="flex items-center gap-1 text-xs text-blue-500" title="Date restricted">
-                        <ng-icon name="lucideCalendar" class="text-xs" />
-                        @if (link().expirationDate) {
-                            <span>{{ link().expirationDate | date:'dd.MM.yyyy' }}</span>
-                        }
-                        @if (link().startDate) {
-                            <span>{{ link().startDate | date:'dd.MM.yyyy' }}</span>
-                        }
+                @if (link().maxVisits !== null) {
+                    <span
+                        data-testid="max-visits-indicator"
+                        class="flex items-center gap-1 text-xs"
+                        [class.text-destructive]="maxVisitsReached()"
+                        [class.text-muted-foreground]="!maxVisitsReached()"
+                    >
+                        <ng-icon name="lucideGauge" class="text-xs" />
+                        <span>{{ link().visitCount }}/{{ link().maxVisits }}</span>
+                    </span>
+                }
+                @if (link().startDate) {
+                    <span
+                        data-testid="start-date-indicator"
+                        role="img"
+                        class="flex items-center gap-1 text-xs text-blue-500"
+                        [attr.aria-label]="'Starts ' + (link().startDate | date:'dd.MM.yyyy')"
+                        [attr.title]="'Starts ' + (link().startDate | date:'dd.MM.yyyy')"
+                    >
+                        <ng-icon name="lucideCalendarClock" class="text-xs" />
+                    </span>
+                }
+                @if (link().expirationDate) {
+                    <span
+                        data-testid="expiration-date-indicator"
+                        role="img"
+                        class="flex items-center gap-1 text-xs text-destructive"
+                        [attr.aria-label]="'Expires ' + (link().expirationDate | date:'dd.MM.yyyy')"
+                        [attr.title]="'Expires ' + (link().expirationDate | date:'dd.MM.yyyy')"
+                    >
+                        <ng-icon name="lucideCalendarX" class="text-xs" />
                     </span>
                 }
                 <span data-testid="visit-count" class="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
@@ -116,6 +142,12 @@ export class LinkCard {
     readonly analyticsRequested = output<Link>();
 
     readonly domain = computed(() => domainOf(this.link().longUrl));
+
+    /** True once the Visit Count has reached the Link's Max Visits cap. */
+    readonly maxVisitsReached = computed(() => {
+        const max = this.link().maxVisits;
+        return max !== null && this.link().visitCount >= max;
+    });
 
     /** A favicon is only shown when Link Metadata has been scraped. */
     readonly faviconUrl = computed(() =>

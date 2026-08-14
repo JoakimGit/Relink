@@ -44,6 +44,12 @@ const plainLink: Link = {
     metadata: null,
 };
 
+const maxedOutLink: Link = {
+    ...constrainedLink,
+    maxVisits: 10,
+    visitCount: 10,
+};
+
 function createMockLinkService() {
     return {
         redirectBaseUrl: 'https://localhost:7445',
@@ -145,21 +151,75 @@ describe('LinkCard', () => {
         expect(visitCount!.textContent).toContain('42');
     });
 
-    it('renders constraint icons when constraints exist', async () => {
+    it('renders constraint indicators when constraints exist', async () => {
         setUp();
         await fixture.whenStable();
 
         expect(nativeElement.querySelector('[data-testid="lock-icon"]')).toBeTruthy();
         expect(nativeElement.querySelector('[data-testid="password-icon"]')).toBeTruthy();
-        expect(nativeElement.querySelector('[data-testid="calendar-icon"]')).toBeTruthy();
+        expect(nativeElement.querySelector('[data-testid="start-date-indicator"]')).toBeTruthy();
+        expect(nativeElement.querySelector('[data-testid="expiration-date-indicator"]')).toBeTruthy();
+        expect(nativeElement.querySelector('[data-testid="max-visits-indicator"]')).toBeTruthy();
     });
 
-    it('does not render constraint icons when no constraints exist', async () => {
+    it('does not render constraint indicators when no constraints exist', async () => {
         setUp(plainLink);
         await fixture.whenStable();
 
         expect(nativeElement.querySelector('[data-testid="lock-icon"]')).toBeFalsy();
         expect(nativeElement.querySelector('[data-testid="password-icon"]')).toBeFalsy();
+        expect(nativeElement.querySelector('[data-testid="start-date-indicator"]')).toBeFalsy();
+        expect(nativeElement.querySelector('[data-testid="expiration-date-indicator"]')).toBeFalsy();
+        expect(nativeElement.querySelector('[data-testid="max-visits-indicator"]')).toBeFalsy();
+    });
+
+    it('shows the Max Visits gauge with current Visits over the cap', async () => {
+        setUp();
+        await fixture.whenStable();
+
+        const indicator = nativeElement.querySelector('[data-testid="max-visits-indicator"]');
+        expect(indicator).toBeTruthy();
+        expect(indicator!.textContent).toContain('42/100');
+        expect(indicator!.classList.contains('text-destructive')).toBe(false);
+    });
+
+    it('styles the Max Visits indicator destructively when the cap is reached', async () => {
+        setUp(maxedOutLink);
+        await fixture.whenStable();
+
+        const indicator = nativeElement.querySelector('[data-testid="max-visits-indicator"]');
+        expect(indicator!.classList.contains('text-destructive')).toBe(true);
+    });
+
+    it('shows no Max Visits indicator when the Link has no cap', async () => {
+        setUp(plainLink);
+        await fixture.whenStable();
+
+        expect(nativeElement.querySelector('[data-testid="max-visits-indicator"]')).toBeFalsy();
+    });
+
+    it('labels the Start Date indicator with "Starts {date}"', async () => {
+        setUp();
+        await fixture.whenStable();
+
+        const indicator = nativeElement.querySelector('[data-testid="start-date-indicator"]');
+        expect(indicator!.getAttribute('title')).toMatch(/^Starts \d{2}\.\d{2}\.\d{4}$/);
+        expect(indicator!.getAttribute('aria-label')).toMatch(/^Starts \d{2}\.\d{2}\.\d{4}$/);
+    });
+
+    it('labels the Expiration Date indicator with "Expires {date}"', async () => {
+        setUp();
+        await fixture.whenStable();
+
+        const indicator = nativeElement.querySelector('[data-testid="expiration-date-indicator"]');
+        expect(indicator!.getAttribute('title')).toMatch(/^Expires \d{2}\.\d{2}\.\d{4}$/);
+        expect(indicator!.getAttribute('aria-label')).toMatch(/^Expires \d{2}\.\d{2}\.\d{4}$/);
+    });
+
+    it('does not render the combined "Date restricted" indicator', async () => {
+        setUp();
+        await fixture.whenStable();
+
         expect(nativeElement.querySelector('[data-testid="calendar-icon"]')).toBeFalsy();
     });
 

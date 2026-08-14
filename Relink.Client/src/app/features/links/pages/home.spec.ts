@@ -198,11 +198,11 @@ describe('HomePage', () => {
             expect(passwordIcon).toBeTruthy();
         });
 
-        it('shows calendar icon when link has start or expiration date', async () => {
+        it('shows date indicators when link has start or expiration date', async () => {
             await fixture.whenStable();
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
-            const calendarIcon = cards[0].querySelector('[data-testid="calendar-icon"]');
-            expect(calendarIcon).toBeTruthy();
+            expect(cards[0].querySelector('[data-testid="start-date-indicator"]')).toBeTruthy();
+            expect(cards[0].querySelector('[data-testid="expiration-date-indicator"]')).toBeTruthy();
         });
     });
 
