@@ -87,7 +87,11 @@ function createMockGroupService() {
             error: () => null as Error | null,
             reload: vi.fn(),
         },
-        createGroup: vi.fn().mockReturnValue(of({ id: 3, name: 'New' })),
+        createGroup: vi.fn((name: string) => {
+            const created = { id: groupsData().length + 1, name };
+            groupsData.update((g) => [...g, created]);
+            return of(created);
+        }),
         renameGroup: vi.fn().mockReturnValue(of({ id: 1, name: 'Renamed' })),
         deleteGroup: vi.fn().mockReturnValue(of(undefined)),
     };
@@ -386,6 +390,26 @@ describe('HomePage', () => {
             const button = nativeElement.querySelector('[data-testid="manage-groups-trigger"]');
             expect(button).toBeTruthy();
             expect(button!.textContent).toContain('Manage Groups');
+        });
+
+        it('shows a Group created in the modal in the pill bar', async () => {
+            await fixture.whenStable();
+
+            (nativeElement.querySelector('[data-testid="manage-groups-trigger"]') as HTMLElement).click();
+            await fixture.whenStable();
+
+            const input = document.body.querySelector('[data-testid="new-group-input"]') as HTMLInputElement;
+            input.value = 'Finance';
+            input.dispatchEvent(new Event('input'));
+            await fixture.whenStable();
+
+            (document.body.querySelector('[data-testid="new-group-create"]') as HTMLElement).click();
+            await fixture.whenStable();
+
+            const pills = Array.from(nativeElement.querySelectorAll('[data-testid="group-pill"]')).map(
+                (p) => p.textContent,
+            );
+            expect(pills.some((p) => p!.includes('Finance'))).toBe(true);
         });
     });
 

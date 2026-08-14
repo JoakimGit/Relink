@@ -1,4 +1,5 @@
 import { Component, computed, inject, output, signal, viewChild } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
 import { Button } from '../../../shared/components/ui/button/button';
@@ -49,10 +50,33 @@ import type { Group } from '../types/link';
                     </p>
                 </app-dialog-header>
 
+                <div class="flex items-center gap-2">
+                    <input
+                        appInput
+                        data-testid="new-group-input"
+                        type="text"
+                        aria-label="New Group name"
+                        placeholder="New Group name"
+                        [value]="newGroupName()"
+                        (input)="onNewGroupNameInput($event)"
+                        (keydown.enter)="onNewGroupEnter($event)"
+                    />
+                    <button
+                        appBtn
+                        size="sm"
+                        type="button"
+                        data-testid="new-group-create"
+                        [disabled]="isCreatingGroup() || !newGroupName().trim()"
+                        (click)="createGroup()"
+                    >
+                        Add
+                    </button>
+                </div>
+
                 <div class="flex flex-col gap-2 max-h-80 overflow-y-auto">
                     @if (groups().length === 0) {
                         <p data-testid="manage-groups-empty" class="text-sm text-muted-foreground text-center py-6">
-                            No Groups yet. Create one while adding a Link.
+                            No Groups yet. Create your first Group above.
                         </p>
                     }
                     @for (group of groups(); track group.id) {
@@ -130,6 +154,8 @@ export class ManageGroupsModal {
     readonly dialogState = signal<'open' | 'closed'>('closed');
     readonly editingId = signal<number | null>(null);
     readonly editName = signal('');
+    readonly newGroupName = signal('');
+    readonly isCreatingGroup = signal(false);
     readonly groupToDelete = signal<Group | null>(null);
     readonly confirmDialog = viewChild.required(ConfirmDialog);
 
@@ -148,6 +174,7 @@ export class ManageGroupsModal {
     onDialogClosed(): void {
         this.dialogState.set('closed');
         this.cancelEdit();
+        this.newGroupName.set('');
     }
 
     startEdit(group: Group): void {
@@ -164,16 +191,52 @@ export class ManageGroupsModal {
         this.editName.set('');
     }
 
+    onNewGroupNameInput(event: Event): void {
+        this.newGroupName.set((event.target as HTMLInputElement).value);
+    }
+
+    onNewGroupEnter(event: Event): void {
+        event.preventDefault();
+        this.createGroup();
+    }
+
+    createGroup(): void {
+        const name = this.newGroupName().trim();
+        if (!name || this.isCreatingGroup()) return;
+
+        this.isCreatingGroup.set(true);
+
+        this.groupService.createGroup(name).subscribe({
+            next: () => {
+                this.newGroupName.set('');
+                this.isCreatingGroup.set(false);
+                this.refreshGroups('Group created.');
+            },
+            error: (error: unknown) => {
+                const message =
+                    error instanceof HttpErrorResponse && error.status === 409
+                        ? 'A Group with that name already exists.'
+                        : 'Failed to create group.';
+                this.toastService.show(message);
+                this.isCreatingGroup.set(false);
+            },
+        });
+    }
+
+    private refreshGroups(message: string): void {
+        this.toastService.show(message);
+        this.groupsResource.reload();
+        this.groupsChanged.emit();
+    }
+
     saveRename(id: number): void {
         const name = this.editName().trim();
         if (!name) return;
 
         this.groupService.renameGroup(id, name).subscribe({
             next: () => {
-                this.toastService.show('Group renamed.');
-                this.groupsResource.reload();
-                this.groupsChanged.emit();
                 this.cancelEdit();
+                this.refreshGroups('Group renamed.');
             },
             error: () => {
                 this.toastService.show('Failed to rename group.');
@@ -192,11 +255,9 @@ export class ManageGroupsModal {
 
         this.groupService.deleteGroup(group.id).subscribe({
             next: () => {
-                this.toastService.show('Group deleted.');
-                this.groupsResource.reload();
-                this.groupsChanged.emit();
                 this.groupToDelete.set(null);
                 this.confirmDialog().close();
+                this.refreshGroups('Group deleted.');
             },
             error: () => {
                 this.toastService.show('Failed to delete group.');

@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ManageGroupsModal } from './manage-groups-modal';
 import { GroupService } from '../services/group-service';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -22,7 +23,11 @@ function createMockGroupService(groups: Group[] = mockGroups) {
             error: () => null as Error | null,
             reload: vi.fn(),
         },
-        createGroup: vi.fn().mockReturnValue(of({ id: 3, name: 'New' })),
+        createGroup: vi.fn((name: string) => {
+            const created: Group = { id: data().length + 1, name };
+            data.update((g) => [...g, created]);
+            return of(created);
+        }),
         renameGroup: vi.fn().mockReturnValue(of({ id: 1, name: 'Renamed' })),
         deleteGroup: vi.fn().mockReturnValue(of(undefined)),
     };
@@ -39,15 +44,17 @@ describe('ManageGroupsModal', () => {
     let fixture: ComponentFixture<ManageGroupsModal>;
     let nativeElement: HTMLElement;
     let mockGroupService: ReturnType<typeof createMockGroupService>;
+    let mockToastService: ReturnType<typeof createMockToastService>;
 
     function setUp(groups: Group[] = mockGroups) {
         mockGroupService = createMockGroupService(groups);
+        mockToastService = createMockToastService();
 
         TestBed.configureTestingModule({
             imports: [ManageGroupsModal],
             providers: [
                 { provide: GroupService, useValue: mockGroupService },
-                { provide: ToastService, useValue: createMockToastService() },
+                { provide: ToastService, useValue: mockToastService },
             ],
         });
 
@@ -92,6 +99,16 @@ describe('ManageGroupsModal', () => {
         expect(empty!.textContent).toContain('No Groups');
     });
 
+    it('empty state tells the user to create a Group in the modal', async () => {
+        setUp([]);
+        await fixture.whenStable();
+        openDialog();
+        await fixture.whenStable();
+
+        const empty = document.body.querySelector('[data-testid="manage-groups-empty"]');
+        expect(empty!.textContent).toContain('Create your first Group above');
+    });
+
     it('renames a Group when the rename form is saved', async () => {
         setUp();
         await fixture.whenStable();
@@ -133,5 +150,93 @@ describe('ManageGroupsModal', () => {
         await fixture.whenStable();
 
         expect(mockGroupService.deleteGroup).toHaveBeenCalledWith(2);
+    });
+
+    it('renders a New Group input when opened', async () => {
+        setUp();
+        await fixture.whenStable();
+        openDialog();
+        await fixture.whenStable();
+
+        const input = document.body.querySelector('[data-testid="new-group-input"]');
+        expect(input).toBeTruthy();
+    });
+
+    it('creates a Group from the New Group input and clears the input', async () => {
+        setUp();
+        await fixture.whenStable();
+        openDialog();
+        await fixture.whenStable();
+
+        const input = document.body.querySelector('[data-testid="new-group-input"]') as HTMLInputElement;
+        input.value = 'Finance';
+        input.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+
+        (document.body.querySelector('[data-testid="new-group-create"]') as HTMLElement).click();
+        await fixture.whenStable();
+
+        expect(mockGroupService.createGroup).toHaveBeenCalledWith('Finance');
+        expect(input.value).toBe('');
+    });
+
+    it('shows the new Group in the list immediately', async () => {
+        setUp();
+        await fixture.whenStable();
+        openDialog();
+        await fixture.whenStable();
+
+        const input = document.body.querySelector('[data-testid="new-group-input"]') as HTMLInputElement;
+        input.value = 'Finance';
+        input.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+
+        (document.body.querySelector('[data-testid="new-group-create"]') as HTMLElement).click();
+        await fixture.whenStable();
+
+        const names = Array.from(document.body.querySelectorAll('[data-testid="group-name"]')).map(
+            (el) => el.textContent?.trim(),
+        );
+        expect(names).toContain('Finance');
+    });
+
+    it('emits groupsChanged when a Group is created', async () => {
+        setUp();
+        await fixture.whenStable();
+        openDialog();
+        await fixture.whenStable();
+
+        const emitted = vi.fn();
+        fixture.componentInstance.groupsChanged.subscribe(emitted);
+
+        const input = document.body.querySelector('[data-testid="new-group-input"]') as HTMLInputElement;
+        input.value = 'Finance';
+        input.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+
+        (document.body.querySelector('[data-testid="new-group-create"]') as HTMLElement).click();
+        await fixture.whenStable();
+
+        expect(emitted).toHaveBeenCalled();
+    });
+
+    it('rejects duplicate Group names with feedback', async () => {
+        setUp();
+        mockGroupService.createGroup.mockReturnValue(
+            throwError(() => new HttpErrorResponse({ status: 409 })),
+        );
+        await fixture.whenStable();
+        openDialog();
+        await fixture.whenStable();
+
+        const input = document.body.querySelector('[data-testid="new-group-input"]') as HTMLInputElement;
+        input.value = 'Work';
+        input.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+
+        (document.body.querySelector('[data-testid="new-group-create"]') as HTMLElement).click();
+        await fixture.whenStable();
+
+        expect(mockToastService.show).toHaveBeenCalledWith('A Group with that name already exists.');
     });
 });
