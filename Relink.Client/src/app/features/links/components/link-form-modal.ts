@@ -70,7 +70,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                     <h3 appDialogTitle class="text-lg mb-3">{{ isEditMode() ? 'Edit Link' : 'Create Link' }}</h3>                    
                 </app-dialog-header>
 
-                <form class="flex flex-col gap-4" (submit)="onSubmit($event)">
+                <form class="flex flex-col gap-4" novalidate (submit)="onSubmit($event)">
                     <!-- Title -->
                     <div class="flex flex-col gap-1.5">
                         <label appLabel for="linkForm-title">
@@ -104,11 +104,12 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                             type="url"
                             placeholder="https://example.com/very/long/url"
                             [ngModel]="longUrl()"
-                            (ngModelChange)="longUrl.set($event); longUrlTouched.set(true)"
+                            (ngModelChange)="longUrl.set($event); submitAttempted.set(false)"
+                            (blur)="longUrlTouched.set(true)"
                             required
                         />
-                        @if (longUrlTouched() && longUrlError()) {
-                            <p class="text-xs text-destructive">{{ longUrlError() }}</p>
+                        @if (longUrlError()) {
+                            <p data-testid="longUrl-error" class="text-xs text-destructive">{{ longUrlError() }}</p>
                         }
                     </div>
 
@@ -313,7 +314,7 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                         <button
                             appBtn
                             type="submit"
-                            [disabled]="isSubmitting() || !isFormValid()"
+                            [disabled]="isSubmitDisabled()"
                             data-testid="submit-button"
                         >
                             @if (isSubmitting()) {
@@ -369,6 +370,7 @@ export class LinkFormModal {
     readonly submitError = signal<string | null>(null);
     readonly titleTouched = signal(false);
     readonly longUrlTouched = signal(false);
+    readonly submitAttempted = signal(false);
 
     // ─── Validation ─────────────────────────────────────────────
     readonly titleError = computed(() => {
@@ -378,9 +380,13 @@ export class LinkFormModal {
         return null;
     });
 
-    readonly longUrlError = computed(() => {
+    readonly longUrlRequiredError = computed(() => {
+        return this.longUrl().trim() ? null : "Long URL is required.";
+    });
+
+    readonly longUrlFormatError = computed(() => {
         const url = this.longUrl().trim();
-        if (!url) return "Long URL is required.";
+        if (!url) return null;
         try {
             new URL(url);
             return null;
@@ -389,12 +395,31 @@ export class LinkFormModal {
         }
     });
 
+    /** Error to display, honoring the timing: required on submit, format on blur. */
+    readonly longUrlError = computed(() => {
+        if (this.submitAttempted() && this.longUrlRequiredError()) {
+            return this.longUrlRequiredError();
+        }
+        if (this.longUrlTouched() && this.longUrlFormatError()) {
+            return this.longUrlFormatError();
+        }
+        return null;
+    });
+
+    readonly isTitleValid = computed(() => this.titleError() === null);
+
     readonly isFormValid = computed(() => {
         return (
-            this.titleError() === null &&
-            this.longUrlError() === null &&
+            this.isTitleValid() &&
+            this.longUrlRequiredError() === null &&
+            this.longUrlFormatError() === null &&
             !this.isSubmitting()
         );
+    });
+
+    /** Submit stays enabled while the Long URL is empty so the required error can appear on submit. */
+    readonly isSubmitDisabled = computed(() => {
+        return this.isSubmitting() || !this.isTitleValid() || this.longUrlFormatError() !== null;
     });
 
     // ─── Group suggestions ──────────────────────────────────────
@@ -427,6 +452,7 @@ export class LinkFormModal {
         this.isSubmitting.set(false);
         this.titleTouched.set(false);
         this.longUrlTouched.set(false);
+        this.submitAttempted.set(false);
     }
 
     // ─── Dialog actions ─────────────────────────────────────────
@@ -451,6 +477,7 @@ export class LinkFormModal {
         this.isSubmitting.set(false);
         this.titleTouched.set(false);
         this.longUrlTouched.set(false);
+        this.submitAttempted.set(false);
         this.dialogState.set("closed");
         this.closed.emit();
     }
@@ -497,6 +524,8 @@ export class LinkFormModal {
     // ─── Submit ─────────────────────────────────────────────────
     async onSubmit(event: Event) {
         event.preventDefault();
+
+        this.submitAttempted.set(true);
 
         if (!this.isFormValid()) return;
 

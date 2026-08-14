@@ -181,25 +181,83 @@ describe('LinkFormModal', () => {
             await fixture.whenStable();
         });
 
-        it('disables submit when Long URL is empty', async () => {
-            const longUrlInput = queryInput('longUrl')!;
-            longUrlInput.focus();
-            longUrlInput.dispatchEvent(new Event('input'));
-            await fixture.whenStable();
+        function queryLongUrlError(): HTMLElement | null {
+            return document.body.querySelector('[data-testid="longUrl-error"]');
+        }
 
-            const submitBtn = document.body.querySelector('[data-testid="submit-button"]') as HTMLButtonElement;
-            expect(submitBtn.disabled).toBe(true);
-        });
-
-        it('shows error for invalid URL format', async () => {
+        it('shows no error while typing an incomplete Long URL', async () => {
             const longUrlInput = queryInput('longUrl')!;
             longUrlInput.value = 'not-a-valid-url';
             longUrlInput.dispatchEvent(new Event('input'));
             await fixture.whenStable();
 
-            const errorElement = document.body.querySelector('p.text-destructive');
+            expect(queryLongUrlError()).toBeFalsy();
+        });
+
+        it('enables submit when the Title is valid even if the Long URL is empty', async () => {
+            fillValidTitle();
+            await fixture.whenStable();
+
+            const submitBtn = document.body.querySelector('[data-testid="submit-button"]') as HTMLButtonElement;
+            expect(submitBtn.disabled).toBe(false);
+        });
+
+        it('shows the required error when submitting with an empty Long URL', async () => {
+            fillValidTitle();
+            await fixture.whenStable();
+
+            const form = document.body.querySelector('form')!;
+            form.dispatchEvent(new Event('submit'));
+            await fixture.whenStable();
+
+            const errorElement = queryLongUrlError();
+            expect(errorElement).toBeTruthy();
+            expect(errorElement!.textContent).toContain('Long URL is required.');
+        });
+
+        it('does not show the required error when leaving an empty Long URL', async () => {
+            const longUrlInput = queryInput('longUrl')!;
+            longUrlInput.dispatchEvent(new Event('blur'));
+            await fixture.whenStable();
+
+            expect(queryLongUrlError()).toBeFalsy();
+        });
+
+        it('clears the error when the user starts typing after a failed submit', async () => {
+            fillValidTitle();
+            await fixture.whenStable();
+
+            const form = document.body.querySelector('form')!;
+            form.dispatchEvent(new Event('submit'));
+            await fixture.whenStable();
+            expect(queryLongUrlError()).toBeTruthy();
+
+            const longUrlInput = queryInput('longUrl')!;
+            longUrlInput.value = 'not-a-valid-url';
+            longUrlInput.dispatchEvent(new Event('input'));
+            await fixture.whenStable();
+
+            expect(queryLongUrlError()).toBeFalsy();
+        });
+
+        it('shows the invalid-URL error after leaving the Long URL field', async () => {
+            const longUrlInput = queryInput('longUrl')!;
+            longUrlInput.value = 'not-a-valid-url';
+            longUrlInput.dispatchEvent(new Event('input'));
+            longUrlInput.dispatchEvent(new Event('blur'));
+            await fixture.whenStable();
+
+            const errorElement = queryLongUrlError();
             expect(errorElement).toBeTruthy();
             expect(errorElement!.textContent).toContain('valid URL');
+        });
+
+        it('shows no error for a valid Long URL', async () => {
+            fillValidLongUrl();
+            queryInput('longUrl')!.dispatchEvent(new Event('blur'));
+            await fixture.whenStable();
+
+            expect(queryLongUrlError()).toBeFalsy();
         });
 
         it('disables submit when Title is empty', async () => {
