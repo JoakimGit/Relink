@@ -22,10 +22,6 @@ const mockLinks: Link[] = [
         visitCount: 42,
         isLocked: true,
         group: null,
-        tags: [
-            { id: 1, name: 'Work' },
-            { id: 2, name: 'Important' },
-        ],
         metadata: {
             id: 1,
             shortenedLinkId: 'abc123',
@@ -49,7 +45,6 @@ const mockLinks: Link[] = [
         visitCount: 5,
         isLocked: false,
         group: { id: 1, name: 'Work' },
-        tags: [{ id: 3, name: 'Personal' }],
         metadata: null,
     },
 ];
@@ -63,12 +58,6 @@ function createMockLinkService(links: Link[]) {
             isLoading: () => false,
             error: () => null as Error | null,
             reload: vi.fn(),
-        },
-        tagsResource: {
-            hasValue: () => true,
-            value: () => [],
-            isLoading: () => false,
-            error: () => null as Error | null,
         },
         createLink: () => ({
             toPromise: () => Promise.resolve({ shortCode: 'test123' }),
@@ -188,15 +177,6 @@ describe('HomePage', () => {
             expect(card!.textContent).toContain('42');
         });
 
-        it('displays Tags as chips on each card', async () => {
-            await fixture.whenStable();
-            const tags = nativeElement.querySelectorAll('[data-testid="tag-chip"]');
-            expect(tags.length).toBe(3);
-            expect(tags[0].textContent).toContain('Work');
-            expect(tags[1].textContent).toContain('Important');
-            expect(tags[2].textContent).toContain('Personal');
-        });
-
         it('shows lock icon when link is locked', async () => {
             await fixture.whenStable();
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
@@ -269,14 +249,6 @@ describe('HomePage', () => {
             expect(cards[0].textContent).toContain('Another Site');
         });
 
-        it('filters cards by Tag name', async () => {
-            component.searchQuery.set('Personal');
-            await fixture.whenStable();
-            const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
-            expect(cards.length).toBe(1);
-            expect(cards[0].textContent).toContain('Another Site');
-        });
-
         it('shows all cards when search is empty', async () => {
             component.searchQuery.set('abc');
             await fixture.whenStable();
@@ -297,7 +269,7 @@ describe('HomePage', () => {
         });
 
         it('is case-insensitive', async () => {
-            component.searchQuery.set('WORK');
+            component.searchQuery.set('EXAMPLE');
             await fixture.whenStable();
             const cards = nativeElement.querySelectorAll('[data-testid="link-card"]');
             expect(cards.length).toBe(1);

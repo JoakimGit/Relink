@@ -16,7 +16,6 @@ public class ShortenUrl : IEndpoint
         DateTime? ExpirationDate,
         string? Password,
         int? MaxVisits,
-        string[]? Tags,
         int? GroupId
     );
     public record Response(string ShortCode, string Title);
@@ -57,15 +56,6 @@ public class ShortenUrl : IEndpoint
                     MaxVisits = request.MaxVisits,
                     IsLocked = false
                 };
-
-                var tags = request.Tags != null && request.Tags.Length > 0
-                    ? await TagUpserter.UpsertAsync(db, request.Tags, ct)
-                    : [];
-
-                foreach (var tag in tags)
-                {
-                    link.Tags.Add(tag);
-                }
 
                 if (request.GroupId.HasValue)
                 {

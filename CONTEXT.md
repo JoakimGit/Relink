@@ -1,6 +1,6 @@
 # ReLink
 
-A single-user link shortening and management tool. Create shortened URLs with optional constraints (password, expiration, visit caps), organize them with Tags and Groups, and track Visit analytics.
+A single-user link shortening and management tool. Create shortened URLs with optional constraints (password, expiration, visit caps), organize them with Groups, and track Visit analytics.
 
 ## Language
 
@@ -57,10 +57,6 @@ A manual flag that makes a Link inactive, overriding all other constraints. Used
 _Avoid_: IsLocked, disabled, deactivated
 
 ### Organization
-
-**Tag**:
-A label attached to Links for categorization. Tags are standalone entities with globally unique names (single-user app). A Link can have many Tags; a Tag can be on many Links. Tags are created automatically when first used — typing "blog" when creating a Link creates a "blog" Tag if it doesn't already exist.
-_Avoid_: Label, category
 
 **Notes**:
 A user-written description of a Link, provided at creation time. Free-form text for the user's own reference. Distinct from the scraped description in Link Metadata.

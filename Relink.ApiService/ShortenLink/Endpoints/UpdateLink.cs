@@ -15,7 +15,6 @@ public class UpdateLink : IEndpoint
         DateTime? ExpirationDate,
         string? Password,
         int? MaxVisits,
-        string[]? Tags,
         int? GroupId
     );
     public record Response(Link Link);
@@ -38,7 +37,6 @@ public class UpdateLink : IEndpoint
         CancellationToken ct)
     {
         var link = await db.Links
-            .Include(l => l.Tags)
             .Include(l => l.Group)
             .Include(l => l.Metadata)
             .SingleOrDefaultAsync(x => x.Id == id, ct);
@@ -66,16 +64,6 @@ public class UpdateLink : IEndpoint
         }
 
         link.MaxVisits = request.MaxVisits;
-
-        if (request.Tags != null && request.Tags.Length > 0)
-        {
-            var newTags = await TagUpserter.UpsertAsync(db, request.Tags, ct);
-            link.Tags.Clear();
-            foreach (var tag in newTags)
-            {
-                link.Tags.Add(tag);
-            }
-        }
 
         if (request.GroupId.HasValue)
         {

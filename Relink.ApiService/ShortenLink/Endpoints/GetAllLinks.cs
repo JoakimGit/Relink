@@ -8,7 +8,7 @@ public class GetAllLinks : IEndpoint
 
     private static async Task<Ok<List<Link>>> Handle(AppDbContext db, CancellationToken ct)
     {
-        var links = await db.Links.Include(l => l.Tags).Include(l => l.Metadata).Include(l => l.Group).OrderBy(l => l.CreatedAt).ToListAsync(ct);
+        var links = await db.Links.Include(l => l.Metadata).Include(l => l.Group).OrderBy(l => l.CreatedAt).ToListAsync(ct);
         return TypedResults.Ok(links);
     }
 }

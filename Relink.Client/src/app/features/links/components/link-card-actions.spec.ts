@@ -18,10 +18,6 @@ const mockLink: Link = {
     maxVisits: 100,
     visitCount: 42,
     isLocked: true,
-    tags: [
-        { id: 1, name: 'Work' },
-        { id: 2, name: 'Important' },
-    ],
 };
 
 function createMockLinkService() {

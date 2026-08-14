@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, output, signal, effect } from "@angular/core";
-import { DatePipe, NgClass } from "@angular/common";
+import { DatePipe } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Button } from "../../../shared/components/ui/button/button";
 import { Dialog } from "../../../shared/components/ui/dialog/dialog";
@@ -14,11 +14,9 @@ import { DialogTrigger } from "../../../shared/components/ui/dialog/dialog-trigg
 import { Input } from "../../../shared/components/ui/input/input";
 import { Label } from "../../../shared/components/ui/label/label";
 import { Textarea } from "../../../shared/components/ui/textarea/textarea";
-import { Badge } from "../../../shared/components/ui/badge/badge";
 import { NgIcon, provideIcons } from "@ng-icons/core";
 import {
     lucidePlus,
-    lucideX,
     lucideLoader,
     lucideGlobe,
 } from "@ng-icons/lucide";
@@ -35,7 +33,6 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
         Dialog,
         DialogClose,
         DialogContent,
-        DialogDescription,
         DialogFooter,
         DialogHeader,
         DialogPortal,
@@ -44,14 +41,11 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
         Input,
         Label,
         Textarea,
-        Badge,
-        NgIcon,
-        NgClass
+        NgIcon
     ],
     viewProviders: [
         provideIcons({
             lucidePlus,
-            lucideX,
             lucideLoader,
             lucideGlobe,
         }),
@@ -201,65 +195,6 @@ import type { CreateLinkRequest, UpdateLinkRequest, Link } from "../types/link";
                                 (ngModelChange)="maxVisits.set($event)"
                             />
                         </div>
-                    </div>
-
-                    <!-- Tags -->
-                    <div class="flex flex-col gap-1.5">
-                        <label appLabel for="linkForm-tagInput">Tags</label>
-                        <div class="relative">
-                            <input
-                                appInput
-                                id="linkForm-tagInput"
-                                name="tagInput"
-                                type="text"
-                                placeholder="Type a tag name and press Enter..."
-                                [ngModel]="tagInput()"
-                                (ngModelChange)="onTagInputChange($event)"
-                                (keydown)="onTagKeydown($event)"
-                                (focus)="onTagFocus()"
-                                (blur)="onTagBlur()"
-                            />
-                            @if (showTagSuggestions() && filteredTagSuggestions().length > 0) {
-                                <div
-                                    data-testid="tag-suggestions"
-                                    class="absolute z-20 mt-1 w-full rounded-md border border-border bg-popover shadow-lg max-h-40 overflow-y-auto"
-                                >
-                                    @for (tag of filteredTagSuggestions(); track tag.id) {
-                                        <button
-                                            type="button"
-                                            data-testid="tag-suggestion-item"
-                                            class="w-full text-left px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                                            (mousedown)="addTag(tag.name)"
-                                        >
-                                            {{ tag.name }}
-                                        </button>
-                                    }
-                                </div>
-                            }
-                        </div>
-                        @if (selectedTags().length > 0) {
-                            <div class="flex flex-wrap gap-1.5 mt-1">
-                                @for (tag of selectedTags(); track tag) {
-                                    <span
-                                        appBadge
-                                        variant="secondary"
-                                        data-testid="selected-tag-chip"
-                                        class="inline-flex items-center gap-1 cursor-pointer"
-                                    >
-                                        {{ tag }}
-                                        <button
-                                            type="button"
-                                            data-testid="remove-tag"
-                                            class="inline-flex items-center hover:text-destructive"
-                                            (click)="removeTag(tag)"
-                                            [attr.aria-label]="'Remove tag ' + tag"
-                                        >
-                                            <ng-icon name="lucideX" class="text-xs" />
-                                        </button>
-                                    </span>
-                                }
-                            </div>
-                        }
                     </div>
 
                     <!-- Group -->
@@ -422,17 +357,12 @@ export class LinkFormModal {
     readonly expirationDate = signal("");
     readonly password = signal("");
     readonly maxVisits = signal("");
-    readonly tagInput = signal("");
-    readonly selectedTags = signal<string[]>([]);
     readonly groupId = signal("");
     readonly newGroupName = signal("");
 
     // ─── Group state ───────────────────────────────────────────
     readonly showGroupCreation = signal(false);
     readonly isCreatingGroup = signal(false);
-
-    // ─── Tag autocomplete state ─────────────────────────────────
-    readonly tagInputFocused = signal(false);
 
     // ─── Submission state ───────────────────────────────────────
     readonly isSubmitting = signal(false);
@@ -467,30 +397,6 @@ export class LinkFormModal {
         );
     });
 
-    // ─── Tag suggestions ────────────────────────────────────────
-    readonly tagsResource = this.linkService.tagsResource;
-
-    readonly existingTags = computed(() => this.tagsResource.value() ?? []);
-
-    readonly filteredTagSuggestions = computed(() => {
-        const input = this.tagInput().trim().toLowerCase();
-        if (!input) return this.existingTags();
-
-        return this.existingTags().filter(
-            (tag) =>
-                tag.name.toLowerCase().includes(input) &&
-                !this.selectedTags().includes(tag.name),
-        );
-    });
-
-    readonly showTagSuggestions = computed(() => {
-        return (
-            this.tagInputFocused() &&
-            this.tagInput().trim().length > 0 &&
-            this.filteredTagSuggestions().length > 0
-        );
-    });
-
     // ─── Group suggestions ──────────────────────────────────────
     readonly groupsResource = this.groupService.groupsResource;
 
@@ -516,7 +422,6 @@ export class LinkFormModal {
         this.expirationDate.set(linkData.expirationDate ? linkData.expirationDate.split("T")[0] : "");
         this.password.set("");
         this.maxVisits.set(linkData.maxVisits?.toString() ?? "");
-        this.selectedTags.set(linkData.tags?.map((t) => t.name) ?? []);
         this.groupId.set(linkData.group?.id?.toString() ?? "");
         this.submitError.set(null);
         this.isSubmitting.set(false);
@@ -538,8 +443,6 @@ export class LinkFormModal {
         this.expirationDate.set("");
         this.password.set("");
         this.maxVisits.set("");
-        this.tagInput.set("");
-        this.selectedTags.set([]);
         this.groupId.set("");
         this.newGroupName.set("");
         this.showGroupCreation.set(false);
@@ -550,49 +453,6 @@ export class LinkFormModal {
         this.longUrlTouched.set(false);
         this.dialogState.set("closed");
         this.closed.emit();
-    }
-
-    // ─── Tag actions ────────────────────────────────────────────
-    addTag(name: string) {
-        const trimmed = name.trim();
-        if (trimmed && !this.selectedTags().includes(trimmed)) {
-            this.selectedTags.update((tags) => [...tags, trimmed]);
-        }
-        this.tagInput.set("");
-    }
-
-    removeTag(name: string) {
-        this.selectedTags.update((tags) => tags.filter((t) => t !== name));
-    }
-
-    onTagInputChange(value: string) {
-        this.tagInput.set(value);
-        this.submitError.set(null);
-    }
-
-    onTagKeydown(event: KeyboardEvent) {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            const input = this.tagInput().trim();
-            if (input) {
-                this.addTag(input);
-            }
-        } else if (
-            event.key === "Backspace" &&
-            this.tagInput() === "" &&
-            this.selectedTags().length > 0
-        ) {
-            const tags = this.selectedTags();
-            this.selectedTags.set(tags.slice(0, -1));
-        }
-    }
-
-    onTagFocus() {
-        this.tagInputFocused.set(true);
-    }
-
-    onTagBlur() {
-        setTimeout(() => this.tagInputFocused.set(false), 150);
     }
 
     // ─── Group actions ──────────────────────────────────────────
@@ -683,9 +543,6 @@ export class LinkFormModal {
         const max = num(this.maxVisits());
         if (max) (request as Record<string, unknown>)['maxVisits'] = max;
         else if (nullOutEmpty) (request as Record<string, unknown>)['maxVisits'] = null;
-
-        const tags = this.selectedTags();
-        if (tags.length > 0) (request as Record<string, unknown>)['tags'] = tags;
 
         const groupIdVal = this.groupId();
         if (groupIdVal !== '') (request as Record<string, unknown>)['groupId'] = parseInt(groupIdVal, 10);

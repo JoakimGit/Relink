@@ -4,15 +4,8 @@ import { vi } from 'vitest';
 import { LinkFormModal } from './link-form-modal';
 import { LinkService } from '../services/link-service';
 import { GroupService } from '../services/group-service';
-import type { Link, CreateLinkRequest, UpdateLinkRequest, Tag } from '../types/link';
+import type { Link, CreateLinkRequest, UpdateLinkRequest } from '../types/link';
 import { of } from 'rxjs';
-
-const mockTags: Tag[] = [
-    { id: 1, name: 'Work' },
-    { id: 2, name: 'Important' },
-    { id: 3, name: 'Personal' },
-    { id: 4, name: 'Blog' },
-];
 
 const mockLink: Link = {
     id: 'abc123',
@@ -26,10 +19,6 @@ const mockLink: Link = {
     maxVisits: 100,
     visitCount: 42,
     isLocked: false,
-    tags: [
-        { id: 1, name: 'Work' },
-        { id: 2, name: 'Important' },
-    ],
     group: { id: 1, name: 'Work' },
     metadata: {
         id: 1,
@@ -43,7 +32,6 @@ const mockLink: Link = {
 };
 
 function createMockLinkService() {
-    const tagsData = signal(mockTags);
     const linksData = signal([]);
     return {
         linksResource: {
@@ -52,12 +40,6 @@ function createMockLinkService() {
             isLoading: () => false,
             error: () => null as Error | null,
             reload: vi.fn(),
-        },
-        tagsResource: {
-            hasValue: () => true,
-            value: () => tagsData(),
-            isLoading: () => false,
-            error: () => null as Error | null,
         },
         createLink: vi.fn().mockReturnValue(of({ shortCode: 'abc123' })),
         updateLink: vi.fn().mockReturnValue(of(undefined)),
@@ -180,7 +162,6 @@ describe('LinkFormModal', () => {
             expect(queryInput('expirationDate')!.type).toBe('date');
             expect(queryInput('password')!.type).toBe('password');
             expect(queryInput('maxVisits')!.type).toBe('number');
-            expect(queryInput('tagInput')).toBeTruthy();
         });
 
         it('has Cancel and Create Link buttons in the footer', () => {
@@ -189,96 +170,6 @@ describe('LinkFormModal', () => {
             const buttonTexts = Array.from(buttons).map((b) => b.textContent?.trim());
             expect(buttonTexts).toContain('Cancel');
             expect(buttonTexts).toContain('Create Link');
-        });
-    });
-
-    describe('create mode - tag autocomplete', () => {
-        beforeEach(async () => {
-            setUp();
-            await fixture.whenStable();
-            openCreateDialog();
-            await fixture.whenStable();
-        });
-
-        it('shows tag suggestions when typing', async () => {
-            const tagInput = queryInput('tagInput')!;
-            tagInput.focus();
-            tagInput.value = 'Wor';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new Event('focus'));
-            await fixture.whenStable();
-
-            const suggestions = document.body.querySelectorAll('[data-testid="tag-suggestion-item"]');
-            expect(suggestions.length).toBeGreaterThan(0);
-            const texts = Array.from(suggestions).map((s) => s.textContent?.trim());
-            expect(texts).toContain('Work');
-        });
-
-        it('filters out already-selected tags from suggestions', async () => {
-            const tagInput = queryInput('tagInput')!;
-            tagInput.value = 'Work';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-            await fixture.whenStable();
-
-            tagInput.value = 'Wor';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new Event('focus'));
-            await fixture.whenStable();
-
-            const suggestions = document.body.querySelectorAll('[data-testid="tag-suggestion-item"]');
-            const texts = Array.from(suggestions).map((s) => s.textContent?.trim());
-            expect(texts).not.toContain('Work');
-        });
-
-        it('adds a tag chip when pressing Enter', async () => {
-            const tagInput = queryInput('tagInput')!;
-            tagInput.value = 'Personal';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-            await fixture.whenStable();
-
-            const chips = document.body.querySelectorAll('[data-testid="selected-tag-chip"]');
-            expect(chips.length).toBe(1);
-            expect(chips[0].textContent).toContain('Personal');
-        });
-
-        it('removes a tag when clicking X on a chip', async () => {
-            const tagInput = queryInput('tagInput')!;
-            tagInput.value = 'Blog';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-            await fixture.whenStable();
-
-            const removeBtn = document.body.querySelector('[data-testid="remove-tag"]') as HTMLButtonElement;
-            removeBtn.click();
-            await fixture.whenStable();
-
-            const chips = document.body.querySelectorAll('[data-testid="selected-tag-chip"]');
-            expect(chips.length).toBe(0);
-        });
-
-        it('removes last tag on Backspace when input is empty', async () => {
-            const tagInput = queryInput('tagInput')!;
-
-            tagInput.value = 'Tag1';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-            await fixture.whenStable();
-
-            tagInput.value = 'Tag2';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-            await fixture.whenStable();
-
-            tagInput.value = '';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace' }));
-            await fixture.whenStable();
-
-            const chips = document.body.querySelectorAll('[data-testid="selected-tag-chip"]');
-            expect(chips.length).toBe(1);
-            expect(chips[0].textContent).toContain('Tag1');
         });
     });
 
@@ -354,12 +245,6 @@ describe('LinkFormModal', () => {
             notesTextarea.value = 'Test notes';
             notesTextarea.dispatchEvent(new Event('input'));
 
-            const tagInput = queryInput('tagInput')!;
-            tagInput.value = 'Work';
-            tagInput.dispatchEvent(new Event('input'));
-            tagInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-            await fixture.whenStable();
-
             const form = document.body.querySelector('form')!;
             form.dispatchEvent(new Event('submit'));
             await fixture.whenStable();
@@ -369,7 +254,6 @@ describe('LinkFormModal', () => {
             expect(payload.longUrl).toBe('https://example.com/test');
             expect(payload.preferedShortCode).toBe('mycode');
             expect(payload.notes).toBe('Test notes');
-            expect(payload.tags).toEqual(['Work']);
         });
 
         it('emits linkSaved on success', async () => {
@@ -477,17 +361,6 @@ describe('LinkFormModal', () => {
 
             const notesTextarea = document.body.querySelector('textarea[name="notes"]') as HTMLTextAreaElement;
             expect(notesTextarea.value).toBe('Example notes');
-        });
-
-        it('pre-fills tags from the link', async () => {
-            openEditDialog();
-            await fixture.whenStable();
-
-            const chips = document.body.querySelectorAll('[data-testid="selected-tag-chip"]');
-            expect(chips.length).toBe(2);
-            const texts = Array.from(chips).map((c) => c.textContent?.trim());
-            expect(texts).toContain('Work');
-            expect(texts).toContain('Important');
         });
 
         it('pre-fills the Group from the link', async () => {

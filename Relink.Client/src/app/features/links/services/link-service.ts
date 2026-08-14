@@ -1,7 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Link, CreateLinkRequest, CreateLinkResponse, UpdateLinkRequest, UnlockResponse, Tag, AnalyticsResponse } from '../types/link';
+import { Link, CreateLinkRequest, CreateLinkResponse, UpdateLinkRequest, UnlockResponse, AnalyticsResponse } from '../types/link';
 
 @Service()
 export class LinkService {
@@ -10,8 +10,6 @@ export class LinkService {
     readonly redirectBaseUrl = 'https://localhost:7445';
 
     readonly linksResource = httpResource<Array<Link>>(() => `${this.apiUrl}/links`);
-
-    readonly tagsResource = httpResource<Array<Tag>>(() => `${this.apiUrl}/tags`);
 
     createLink(request: CreateLinkRequest) {
         return this.http.post<CreateLinkResponse>(`${this.apiUrl}/links`, request);

@@ -7,7 +7,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Link> Links { get; set; }
     public DbSet<LinkMetadata> LinkMetadata { get; set; }
     public DbSet<LinkAnalytics> LinkAnalytics { get; set; }
-    public DbSet<Tag> Tags { get; set; }
     public DbSet<Group> Groups { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -15,7 +14,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ConfigureLinkTable(modelBuilder);
         ConfigureLinkMetadataTable(modelBuilder);
         ConfigureLinkAnalyticsTable(modelBuilder);
-        ConfigureTagTable(modelBuilder);
         ConfigureGroupTable(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
@@ -44,8 +42,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(e => e.GroupId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasMany(e => e.Tags).WithMany();
         });
     }
 
@@ -70,16 +66,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.Referrer).HasMaxLength(2048);
             entity.Property(e => e.UserAgent).HasMaxLength(500);
             entity.HasIndex(e => new { e.ShortenedLinkId, e.AccessedAt });
-        });
-    }
-
-    private static void ConfigureTagTable(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Tag>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.HasIndex(e => e.Name).IsUnique();
         });
     }
 

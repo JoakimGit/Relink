@@ -10,7 +10,6 @@ public static class Endpoints
         app.MapEndpoint<GetOriginalUrl>();
 
         endpoints.MapLinkEndpoints();
-        endpoints.MapTagEndpoints();
         endpoints.MapGroupEndpoints();
     }
 
@@ -26,17 +25,6 @@ public static class Endpoints
         endpoints.MapEndpoint<UnlockLink>();
         endpoints.MapEndpoint<GetLinkAnalytics>();
         endpoints.MapEndpoint<ResetVisitCount>();
-    }
-
-    private static void MapTagEndpoints(this IEndpointRouteBuilder app)
-    {
-        var endpoints = app.MapGroup("/tags")
-            .WithTags("Tags");
-
-        endpoints.MapEndpoint<CreateTag>();
-        endpoints.MapEndpoint<UpdateTag>();
-        endpoints.MapEndpoint<DeleteTag>();
-        endpoints.MapEndpoint<GetAllTags>();
     }
 
     private static void MapGroupEndpoints(this IEndpointRouteBuilder app)

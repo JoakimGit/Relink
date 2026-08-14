@@ -18,10 +18,6 @@ const constrainedLink: Link = {
     maxVisits: 100,
     visitCount: 42,
     isLocked: true,
-    tags: [
-        { id: 1, name: 'Work' },
-        { id: 2, name: 'Important' },
-    ],
     metadata: {
         id: 1,
         shortenedLinkId: 'abc123',
@@ -45,7 +41,6 @@ const plainLink: Link = {
     maxVisits: null,
     visitCount: 5,
     isLocked: false,
-    tags: [{ id: 3, name: 'Personal' }],
     metadata: null,
 };
 
@@ -166,16 +161,6 @@ describe('LinkCard', () => {
         expect(nativeElement.querySelector('[data-testid="lock-icon"]')).toBeFalsy();
         expect(nativeElement.querySelector('[data-testid="password-icon"]')).toBeFalsy();
         expect(nativeElement.querySelector('[data-testid="calendar-icon"]')).toBeFalsy();
-    });
-
-    it('renders Tags as chips', async () => {
-        setUp();
-        await fixture.whenStable();
-
-        const tags = nativeElement.querySelectorAll('[data-testid="tag-chip"]');
-        expect(tags.length).toBe(2);
-        expect(tags[0].textContent).toContain('Work');
-        expect(tags[1].textContent).toContain('Important');
     });
 
     it('renders the actions menu trigger', async () => {

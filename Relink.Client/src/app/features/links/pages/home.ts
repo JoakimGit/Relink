@@ -59,7 +59,7 @@ import type { Link } from "../types/link";
                     />
                     <input
                         type="search"
-                        placeholder="Search links by title, code, URL, or tag..."
+                        placeholder="Search links by title, code, or URL..."
                         [ngModel]="searchQuery()"
                         (ngModelChange)="searchQuery.set($event)"
                         class="w-full rounded-lg border border-border bg-background pl-10 pr-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
@@ -189,8 +189,7 @@ export class HomePage {
             result = result.filter((link) =>
                 link.title.toLowerCase().includes(query) ||
                 link.id.toLowerCase().includes(query) ||
-                link.longUrl.toLowerCase().includes(query) ||
-                (link.tags && link.tags.some(tag => tag.name.toLowerCase().includes(query)))
+                link.longUrl.toLowerCase().includes(query)
             );
         }
 

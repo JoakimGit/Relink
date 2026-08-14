@@ -19,7 +19,6 @@ const mockLink: Link = {
     maxVisits: null,
     visitCount: 42,
     isLocked: false,
-    tags: [],
     metadata: null,
 };
 

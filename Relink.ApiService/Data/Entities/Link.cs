@@ -16,7 +16,6 @@ public class Link
 
     public LinkMetadata? Metadata { get; set; }
     public List<LinkAnalytics> Analytics { get; set; } = [];
-    public List<Tag> Tags { get; set; } = [];
     public Group? Group { get; set; }
     public int? GroupId { get; set; }
 }

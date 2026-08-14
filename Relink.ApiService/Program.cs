@@ -5,8 +5,6 @@ global using Relink.ApiService.Common.Extensions;
 global using Relink.ApiService.Data;
 global using Relink.ApiService.Data.Entities;
 global using Relink.ApiService.ShortenLink.Endpoints;
-global using Relink.ApiService.Tags;
-global using Relink.ApiService.Tags.Endpoints;
 global using Relink.ApiService.Groups.Endpoints;
 global using Relink.ApiService.Analytics.Endpoints;
 global using Microsoft.EntityFrameworkCore;

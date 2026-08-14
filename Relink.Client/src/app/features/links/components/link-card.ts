@@ -106,19 +106,6 @@ import type { Link } from '../types/link';
                 </span>
             </div>
 
-            <!-- Tags -->
-            @if (tags().length > 0) {
-                <div class="flex flex-wrap gap-1.5 mt-auto pt-3 border-t border-border">
-                    @for (tag of tags(); track tag.id) {
-                        <span
-                            data-testid="tag-chip"
-                            class="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-                        >
-                            {{ tag.name }}
-                        </span>
-                    }
-                </div>
-            }
         </div>
     `,
 })
@@ -134,8 +121,6 @@ export class LinkCard {
     readonly faviconUrl = computed(() =>
         this.link().metadata ? faviconUrlFor(this.domain()) : null,
     );
-
-    readonly tags = computed(() => this.link().tags ?? []);
 
     onFaviconError(event: Event) {
         (event.target as HTMLImageElement).style.display = 'none';

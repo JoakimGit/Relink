@@ -1,8 +1,3 @@
-export type Tag = {
-    id: number;
-    name: string;
-};
-
 export type Group = {
     id: number;
     name: string;
@@ -31,7 +26,6 @@ export type Link = {
     visitCount: number;
     isLocked: boolean;
 
-    tags?: Array<Tag>;
     metadata?: LinkMetadata | null;
     group?: Group | null;
     groupId?: number | null;
@@ -46,7 +40,6 @@ export type CreateLinkRequest = {
     expirationDate?: string;
     password?: string;
     maxVisits?: number;
-    tags?: string[];
     groupId?: number;
 };
 
@@ -64,7 +57,6 @@ export type UpdateLinkRequest = {
     expirationDate?: string | null;
     password?: string | null;
     maxVisits?: number | null;
-    tags?: string[];
     groupId?: number;
 };
 
