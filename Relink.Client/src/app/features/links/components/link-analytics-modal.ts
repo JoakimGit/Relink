@@ -40,7 +40,7 @@ import type { Link, VisitBucket } from '../types/link';
     ],
     template: `
         <app-dialog [state]="dialogState()" (closed)="onClosed()">
-            <app-dialog-content *appDialogPortal="let ctx" class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <app-dialog-content *appDialogPortal="let ctx" class="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <app-dialog-header>
                     <h3 appDialogTitle class="flex items-center gap-2">
                         <ng-icon name="lucideBarChart3" class="text-muted-foreground" />
@@ -86,7 +86,7 @@ import type { Link, VisitBucket } from '../types/link';
                             </div>
                             <div class="flex justify-between mt-1 text-[10px] text-muted-foreground">
                                 <span>{{ firstBucketLabel() }}</span>
-                                <span>48h hourly · then daily</span>
+                                <span>Last 30 days · daily</span>
                                 <span>{{ lastBucketLabel() }}</span>
                             </div>
                         </div>
@@ -208,7 +208,7 @@ export class LinkAnalyticsModal {
     readonly chartAriaLabel = computed(() => {
         const data = this.analytics();
         if (!data) return 'Visit chart';
-        return `Visit chart with ${data.visitCounts.length} time buckets: hourly for the last 48 hours, then daily.`;
+        return `Visit chart with ${data.visitCounts.length} daily buckets covering the last 30 days.`;
     });
 
     readonly firstBucketLabel = computed(() => {
@@ -224,7 +224,7 @@ export class LinkAnalyticsModal {
     readonly resetMessage = computed(() => {
         const link = this.activeLink();
         return link
-            ? `This will reset the Visit Count for "${link.title}" to zero. This action cannot be undone.`
+            ? `This will reset the Visit Count for "${link.title}" to zero and erase its analytics history. This action cannot be undone.`
             : '';
     });
 
@@ -258,6 +258,7 @@ export class LinkAnalyticsModal {
                 this.isResetting.set(false);
                 this.toastService.show('Visit Count reset.');
                 this.visitCountReset.emit(link.id);
+                this.analyticsResource.reload();
                 this.resetConfirmDialog().close();
             },
             error: () => {
@@ -269,7 +270,8 @@ export class LinkAnalyticsModal {
     }
 
     barHeightPercent(count: number): number {
-        return count === 0 ? 0 : (count / this.maxBucketCount()) * 100;
+        if (count === 0) return 2;
+        return (count / this.maxBucketCount()) * 100;
     }
 
     sharePercent(count: number): number {
@@ -284,14 +286,6 @@ export class LinkAnalyticsModal {
 
     private bucketLabel(bucket: VisitBucket): string {
         const start = new Date(bucket.start);
-        if (this.isHourlyBucket(bucket)) {
-            return `${String(start.getHours()).padStart(2, '0')}:00`;
-        }
-        return `${String(start.getDate()).padStart(2, '0')}.${String(start.getMonth() + 1).padStart(2, '0')}`;
-    }
-
-    private isHourlyBucket(bucket: VisitBucket): boolean {
-        const durationMs = new Date(bucket.end).getTime() - new Date(bucket.start).getTime();
-        return durationMs <= 60 * 60 * 1000;
+        return `${String(start.getUTCDate()).padStart(2, '0')}.${String(start.getUTCMonth() + 1).padStart(2, '0')}`;
     }
 }

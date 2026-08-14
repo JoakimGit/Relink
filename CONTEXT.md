@@ -33,7 +33,7 @@ A single instance of someone following a Link. Each Visit is recorded as a row i
 _Avoid_: Click, usage, hit, redirect
 
 **Visit Count**:
-The total number of Visits a Link has received.
+The total number of Visits a Link has received. Resetting the Visit Count zeroes the count and erases the Link's analytics history.
 _Avoid_: Click count, usage count, CurrentUsages
 
 **Max Visits**:

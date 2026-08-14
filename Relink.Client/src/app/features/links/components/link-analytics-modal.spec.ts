@@ -22,12 +22,6 @@ const mockLink: Link = {
     metadata: null,
 };
 
-function hourBucket(startIso: string, count: number): VisitBucket {
-    const start = new Date(startIso);
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-    return { start: start.toISOString(), end: end.toISOString(), count };
-}
-
 function dayBucket(startIso: string, count: number): VisitBucket {
     const start = new Date(startIso);
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
@@ -36,11 +30,9 @@ function dayBucket(startIso: string, count: number): VisitBucket {
 
 const analyticsFixture: AnalyticsResponse = {
     visitCounts: [
-        hourBucket('2025-06-15T07:00:00Z', 2),
-        hourBucket('2025-06-15T08:00:00Z', 3),
-        hourBucket('2025-06-15T09:00:00Z', 0),
-        dayBucket('2025-06-14T00:00:00Z', 5),
-        dayBucket('2025-06-13T00:00:00Z', 1),
+        dayBucket('2025-06-15T00:00:00Z', 2),
+        dayBucket('2025-06-14T00:00:00Z', 3),
+        dayBucket('2025-06-13T00:00:00Z', 0),
     ],
     topReferrers: [
         { referrer: 'https://example.com/source', count: 4 },
@@ -114,18 +106,23 @@ describe('LinkAnalyticsModal', () => {
             expect(document.body.querySelector('[data-testid="browser-list"]')).toBeTruthy();
         });
 
-        it('renders hourly buckets with an HH:00 label', () => {
-            expect(barTitles().some((t) => /^3 visits — \d{2}:00$/.test(t))).toBe(true);
+        it('renders daily buckets with a dd.MM label', () => {
+            expect(barTitles().some((t) => /^3 visits — \d{2}\.\d{2}$/.test(t))).toBe(true);
         });
 
-        it('renders daily buckets with a dd.MM label', () => {
-            expect(barTitles().some((t) => /^5 visits — \d{2}\.\d{2}$/.test(t))).toBe(true);
+        it('renders zero-count days', () => {
+            expect(barTitles().some((t) => /^0 visits — \d{2}\.\d{2}$/.test(t))).toBe(true);
+        });
+
+        it('captions the chart as daily buckets', () => {
+            const chart = document.body.querySelector('[data-testid="analytics-chart"]');
+            expect(chart!.textContent).toContain('Last 30 days · daily');
         });
 
         it('labels the chart for screen readers', () => {
             const chart = document.body.querySelector('[data-testid="analytics-chart"]');
             expect(chart!.getAttribute('role')).toBe('img');
-            expect(chart!.getAttribute('aria-label')).toContain('hourly');
+            expect(chart!.getAttribute('aria-label')).toContain('daily');
         });
 
         it('lists top referrers with counts', () => {
@@ -155,6 +152,7 @@ describe('LinkAnalyticsModal', () => {
 
             const confirmButton = document.body.querySelector('[data-testid="confirm-dialog-confirm"]');
             expect(confirmButton).toBeTruthy();
+            expect(document.body.textContent).toContain('erase its analytics history');
             expect(mockLinkService.resetVisitCount).not.toHaveBeenCalled();
         });
 

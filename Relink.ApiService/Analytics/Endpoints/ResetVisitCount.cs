@@ -15,6 +15,11 @@ public class ResetVisitCount : IEndpoint
         var link = await db.Links.FindAsync([id], ct);
         if (link == null) return TypedResults.NotFound();
 
+        var analytics = await db.LinkAnalytics
+            .Where(a => a.ShortenedLinkId == id)
+            .ToListAsync(ct);
+        db.LinkAnalytics.RemoveRange(analytics);
+
         link.VisitCount = 0;
         await db.SaveChangesAsync(ct);
 

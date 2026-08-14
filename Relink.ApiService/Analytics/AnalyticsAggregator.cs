@@ -13,16 +13,16 @@ public record BrowserCount(string Browser, int Count);
 
 public static class AnalyticsAggregator
 {
-    private const int HourlyBucketCount = 48;
+    private const int DailyBucketCount = 30;
 
     public static AnalyticsResponse Aggregate(IReadOnlyList<LinkAnalytics> visits, DateTime now)
     {
-        // Hourly buckets: 48 one-hour buckets covering exactly the last 48 hours,
-        // ending at `now`. Anything older than that window is bucketed by UTC day.
-        var hourlyWindowStart = now.AddHours(-HourlyBucketCount);
+        // Daily buckets: 30 one-day buckets covering exactly the last 30 days,
+        // ending at the start of today (UTC). Zero-count days are included.
+        var today = now.Date;
+        var windowStart = today.AddDays(-(DailyBucketCount - 1));
 
-        var hourly = new int[HourlyBucketCount];
-        var daily = new Dictionary<DateTime, int>();
+        var daily = new int[DailyBucketCount];
         var referrers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var browsers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -30,15 +30,10 @@ public static class AnalyticsAggregator
         {
             var accessedAt = visit.AccessedAt;
 
-            if (accessedAt < hourlyWindowStart)
+            if (accessedAt >= windowStart && accessedAt < today.AddDays(1))
             {
-                var day = accessedAt.Date;
-                daily[day] = daily.GetValueOrDefault(day) + 1;
-            }
-            else
-            {
-                var bucketIndex = (int)(accessedAt - hourlyWindowStart).TotalHours;
-                hourly[Math.Clamp(bucketIndex, 0, HourlyBucketCount - 1)]++;
+                var bucketIndex = (int)(accessedAt.Date - windowStart).TotalDays;
+                daily[bucketIndex]++;
             }
 
             var referrer = string.IsNullOrWhiteSpace(visit.Referrer) ? "Direct" : visit.Referrer;
@@ -48,17 +43,12 @@ public static class AnalyticsAggregator
             browsers[browser] = browsers.GetValueOrDefault(browser) + 1;
         }
 
-        var visitCounts = new List<VisitBucket>(HourlyBucketCount + daily.Count);
+        var visitCounts = new List<VisitBucket>(DailyBucketCount);
 
-        for (var i = 0; i < HourlyBucketCount; i++)
+        for (var i = 0; i < DailyBucketCount; i++)
         {
-            var start = hourlyWindowStart.AddHours(i);
-            visitCounts.Add(new VisitBucket(start, start.AddHours(1), hourly[i]));
-        }
-
-        foreach (var (day, count) in daily.OrderBy(kv => kv.Key))
-        {
-            visitCounts.Add(new VisitBucket(day, day.AddDays(1), count));
+            var start = windowStart.AddDays(i);
+            visitCounts.Add(new VisitBucket(start, start.AddDays(1), daily[i]));
         }
 
         var topReferrers = referrers

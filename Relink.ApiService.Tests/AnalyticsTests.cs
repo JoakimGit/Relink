@@ -38,43 +38,57 @@ public class AnalyticsTests : IClassFixture<CustomWebApplicationFactory>
         new() { ShortenedLinkId = string.Empty, AccessedAt = accessedAt, Referrer = referrer, UserAgent = userAgent };
 
     [Fact]
-    public async Task Analytics_ReturnsHourlyBucketsForLast48Hours()
+    public async Task Analytics_ReturnsDailyBucketsForLast30Days()
     {
         var now = DateTime.UtcNow;
         await SeedLink(
-            new Link { Id = "anahour1", Title = "Hourly", LongUrl = "https://example.com" },
+            new Link { Id = "anaday1", Title = "Daily", LongUrl = "https://example.com" },
             Visit(now.AddHours(-1)),
             Visit(now.AddHours(-2)));
 
         var client = CreateClient();
-        var response = await client.GetAsync("/api/links/anahour1/analytics");
+        var response = await client.GetAsync("/api/links/anaday1/analytics");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var analytics = await response.Content.ReadFromJsonAsync<AnalyticsResponse>();
         Assert.NotNull(analytics);
 
-        var hourly = analytics!.VisitCounts.Where(b => b.End - b.Start == TimeSpan.FromHours(1)).ToList();
-        Assert.Equal(48, hourly.Count);
-        Assert.Equal(2, hourly.Sum(b => b.Count));
+        var daily = analytics!.VisitCounts.Where(b => b.End - b.Start == TimeSpan.FromDays(1)).ToList();
+        Assert.Equal(30, daily.Count);
+        Assert.Equal(2, daily.Sum(b => b.Count));
     }
 
     [Fact]
-    public async Task Analytics_BucketsVisitsOlderThan48HoursDaily()
+    public async Task Analytics_BucketsVisitsWithin30DaysByDay()
     {
         var now = DateTime.UtcNow;
         var fiveDaysAgo = now.AddDays(-5);
         await SeedLink(
-            new Link { Id = "anaday1", Title = "Daily", LongUrl = "https://example.com" },
+            new Link { Id = "anaday2", Title = "Daily", LongUrl = "https://example.com" },
             Visit(fiveDaysAgo));
 
         var client = CreateClient();
-        var analytics = await client.GetFromJsonAsync<AnalyticsResponse>("/api/links/anaday1/analytics");
+        var analytics = await client.GetFromJsonAsync<AnalyticsResponse>("/api/links/anaday2/analytics");
 
         Assert.NotNull(analytics);
-        var daily = analytics!.VisitCounts.Where(b => b.End - b.Start == TimeSpan.FromDays(1)).ToList();
-        var bucket = Assert.Single(daily);
-        Assert.Equal(1, bucket.Count);
+        Assert.Equal(30, analytics!.VisitCounts.Count);
+        var bucket = Assert.Single(analytics.VisitCounts, b => b.Count == 1);
         Assert.True(bucket.Start <= fiveDaysAgo && fiveDaysAgo < bucket.End);
+    }
+
+    [Fact]
+    public async Task Analytics_ExcludesVisitsOlderThan30DaysFromBuckets()
+    {
+        await SeedLink(
+            new Link { Id = "anaday3", Title = "Daily", LongUrl = "https://example.com" },
+            Visit(DateTime.UtcNow.AddDays(-40)));
+
+        var client = CreateClient();
+        var analytics = await client.GetFromJsonAsync<AnalyticsResponse>("/api/links/anaday3/analytics");
+
+        Assert.NotNull(analytics);
+        Assert.Equal(30, analytics!.VisitCounts.Count);
+        Assert.All(analytics.VisitCounts, b => Assert.Equal(0, b.Count));
     }
 
     [Fact]
@@ -137,6 +151,29 @@ public class AnalyticsTests : IClassFixture<CustomWebApplicationFactory>
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var link = await db.Links.AsNoTracking().SingleAsync(l => l.Id == "anareset1");
         Assert.Equal(0, link.VisitCount);
+    }
+
+    [Fact]
+    public async Task ResetVisitCount_ErasesAnalyticsHistory()
+    {
+        await SeedLink(
+            new Link { Id = "anareset2", Title = "Reset", LongUrl = "https://example.com", VisitCount = 7 },
+            Visit(DateTime.UtcNow.AddHours(-1), referrer: "https://twitter.com", userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"));
+
+        var client = CreateClient();
+        var response = await client.PostAsync("/api/links/anareset2/reset-visit-count", null);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Empty(await db.LinkAnalytics.Where(a => a.ShortenedLinkId == "anareset2").ToListAsync());
+
+        var analytics = await client.GetFromJsonAsync<AnalyticsResponse>("/api/links/anareset2/analytics");
+        Assert.NotNull(analytics);
+        Assert.All(analytics!.VisitCounts, b => Assert.Equal(0, b.Count));
+        Assert.Empty(analytics.TopReferrers);
+        Assert.Empty(analytics.BrowserBreakdown);
     }
 
     [Fact]

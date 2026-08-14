@@ -4,14 +4,30 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Reset Visit Count zeroes the count and removes the Link's analytics history
-- [ ] After a reset, the analytics endpoint returns empty buckets, referrers, and browsers
-- [ ] The reset confirmation warns that history will be erased
-- [ ] The analytics chart shows daily buckets for the last 30 days, zero-count days included
-- [ ] The chart no longer shows hourly buckets
-- [ ] The chart caption and accessibility label describe daily buckets
-- [ ] The analytics modal is wider
-- [ ] Top referrers and the browser breakdown remain unchanged
-- [ ] The glossary's Visit Count term reflects reset behavior
+- [x] Reset Visit Count zeroes the count and removes the Link's analytics history
+- [x] After a reset, the analytics endpoint returns empty buckets, referrers, and browsers
+- [x] The reset confirmation warns that history will be erased
+- [x] The analytics chart shows daily buckets for the last 30 days, zero-count days included
+- [x] The chart no longer shows hourly buckets
+- [x] The chart caption and accessibility label describe daily buckets
+- [x] The analytics modal is wider
+- [x] Top referrers and the browser breakdown remain unchanged
+- [x] The glossary's Visit Count term reflects reset behavior
+
+## Comments
+
+Implemented.
+
+Backend:
+- `AnalyticsAggregator.Aggregate` now returns 30 daily buckets covering the last 30 days ending today (UTC), zero-count days included; hourly buckets removed. Top referrers and browser breakdown still aggregate over all Visits.
+- `ResetVisitCount` deletes the Link's `LinkAnalytics` rows alongside zeroing the Visit Count.
+
+Frontend:
+- `link-analytics-modal.ts`: widened to `sm:max-w-4xl`, chart caption now "Last 30 days · daily", aria label describes daily buckets, bucket labels are daily only, and the reset confirmation warns the analytics history will be erased.
+
+Glossary:
+- `CONTEXT.md` Visit Count term now notes that resetting zeroes the count and erases analytics history.
+
+Tests: `AnalyticsTests.cs` updated (30-day buckets, out-of-window exclusion, reset erases history); `link-analytics-modal.spec.ts` updated. Backend suite 50/50 pass, frontend suite 141/141 pass, typecheck clean.
